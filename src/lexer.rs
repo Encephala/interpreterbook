@@ -2,14 +2,23 @@ use std::str;
 
 #[derive(Debug, PartialEq)]
 enum Token {
-    ILLEGAL,
-    EOF,
-
     IDENT(String),
     INT(usize),
 
+    ILLEGAL,
+    EOF,
+
     ASSIGN,
     PLUS,
+    MINUS,
+    BANG,
+    ASTERISK,
+    SLASH,
+
+    EQUALS,
+    NOTEQUALS,
+    LESSTHAN,
+    GREATERTHAN,
 
     COMMA,
     SEMICOLON,
@@ -19,9 +28,17 @@ enum Token {
     LBRACE,
     RBRACE,
 
-    FUNCTION,
     LET,
+    TRUE,
+    FALSE,
+    IF,
+    ELSE,
+    FUNCTION,
+    RETURN,
 }
+
+use Token::*;
+
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
@@ -45,6 +62,14 @@ impl<'a> Lexer<'a> {
         return lexer;
     }
 
+    fn peek(&self) -> u8 {
+        if self.index >= self.input.len() {
+            return 0;
+        }
+
+        return self.input[self.next_index];
+    }
+
     fn read_char(&mut self) {
         if self.next_index >= self.input.len() {
             self.char = 0;
@@ -57,6 +82,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn read_identifier(&mut self) -> Token {
+
         let start_index = self.index;
 
         // identifier starts with a letter but may contain numbers after that first letter
@@ -65,9 +91,14 @@ impl<'a> Lexer<'a> {
         }
 
         return match &self.input[start_index..self.index] {
-            b"fn" => Token::FUNCTION,
-            b"let" => Token::LET,
-            _ => Token::IDENT(str::from_utf8(&self.input[start_index..self.index]).unwrap().into())
+            b"let" => LET,
+            b"true" => TRUE,
+            b"false" => FALSE,
+            b"if" => IF,
+            b"else" => ELSE,
+            b"fn" => FUNCTION,
+            b"return" => RETURN,
+            _ => IDENT(str::from_utf8(&self.input[start_index..self.index]).unwrap().into())
         };
     }
 
@@ -78,7 +109,7 @@ impl<'a> Lexer<'a> {
             self.read_char()
         }
 
-        return Token::INT(str::from_utf8(&self.input[start_index..self.index]).unwrap().parse().unwrap());
+        return INT(str::from_utf8(&self.input[start_index..self.index]).unwrap().parse().unwrap());
     }
 
     fn skip_whitespace(&mut self) {
@@ -88,19 +119,37 @@ impl<'a> Lexer<'a> {
     }
 
     fn next_token(&mut self) -> Token {
-        use Token::*;
-
         self.skip_whitespace();
 
         let token = match self.char {
             c if c.is_ascii_alphabetic() => return self.read_identifier(),
             c if c.is_ascii_digit() => return self.read_number(),
-            b'=' => ASSIGN,
+            b'=' => {
+                        if self.peek() == b'=' {
+                            self.read_char();
+                            EQUALS
+                        } else {
+                            ASSIGN
+                        }
+                    }
+            b'+' => PLUS,
+            b'-' => MINUS,
+            b'!' => {
+                        if self.peek() == b'=' {
+                            self.read_char();
+                            NOTEQUALS
+                        } else {
+                            BANG
+                        }
+                    }
+            b'*' => ASTERISK,
+            b'/' => SLASH,
+            b'<' => LESSTHAN,
+            b'>' => GREATERTHAN,
+            b',' => COMMA,
             b';' => SEMICOLON,
             b'(' => LPAREN,
             b')' => RPAREN,
-            b',' => COMMA,
-            b'+' => PLUS,
             b'{' => LBRACE,
             b'}' => RBRACE,
             0 => EOF,
@@ -120,7 +169,7 @@ impl<'a> Lexer<'a> {
 
             tokens.push(token);
 
-            if tokens.last().unwrap() == &Token::EOF {
+            if tokens.last().unwrap() == &EOF {
                 break;
             }
         }
@@ -131,11 +180,10 @@ impl<'a> Lexer<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Token, Lexer};
+    use super::{Token::*, Lexer};
 
     #[test]
     fn next_token_basic_functionality() {
-        use Token::*;
 
         let input = "=+(){},;";
 
@@ -160,8 +208,6 @@ mod tests {
 
     #[test]
     fn next_token_real_world_input() {
-        use Token::*;
-
         let input = "let five = 5;
         let ten = 10;
 
@@ -213,6 +259,67 @@ mod tests {
             RPAREN,
             SEMICOLON,
             EOF,
+        ];
+
+        assert_eq!(true_result, expected_result);
+    }
+
+    // Test some specific characters and keywords like `true` and `false`
+    #[test]
+    fn next_token_extended_token_set() {
+        let input = "!-/*5;
+        5 < 10 > 5;
+        if (5 < 10) {
+        return true;
+        } else {
+        return false;
+        }
+        10 == 10;
+        10 != 9;";
+
+        let mut lexer = Lexer::new(input);
+
+        let true_result = lexer.collect_input_to_tokens();
+
+        let expected_result = vec![
+            BANG,
+            MINUS,
+            SLASH,
+            ASTERISK,
+            INT(5),
+            SEMICOLON,
+            INT(5),
+            LESSTHAN,
+            INT(10),
+            GREATERTHAN,
+            INT(5),
+            SEMICOLON,
+            IF,
+            LPAREN,
+            INT(5),
+            LESSTHAN,
+            INT(10),
+            RPAREN,
+            LBRACE,
+            RETURN,
+            TRUE,
+            SEMICOLON,
+            RBRACE,
+            ELSE,
+            LBRACE,
+            RETURN,
+            FALSE,
+            SEMICOLON,
+            RBRACE,
+            INT(10),
+            EQUALS,
+            INT(10),
+            SEMICOLON,
+            INT(10),
+            NOTEQUALS,
+            INT(9),
+            SEMICOLON,
+            EOF
         ];
 
         assert_eq!(true_result, expected_result);

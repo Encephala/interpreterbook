@@ -111,6 +111,22 @@ impl<'a> Lexer<'a> {
 
         return token;
     }
+
+    fn collect_input_to_tokens(&mut self) -> Vec<Token> {
+        let mut tokens = vec![];
+
+        loop {
+            let token = self.next_token();
+
+            tokens.push(token);
+
+            if tokens.last().unwrap() == &Token::EOF {
+                break;
+            }
+        }
+
+        return tokens
+    }
 }
 
 #[cfg(test)]
@@ -125,14 +141,21 @@ mod tests {
 
         let mut lexer = Lexer::new(input);
 
-        assert_eq!(lexer.next_token(), ASSIGN);
-        assert_eq!(lexer.next_token(), PLUS);
-        assert_eq!(lexer.next_token(), LPAREN);
-        assert_eq!(lexer.next_token(), RPAREN);
-        assert_eq!(lexer.next_token(), LBRACE);
-        assert_eq!(lexer.next_token(), RBRACE);
-        assert_eq!(lexer.next_token(), COMMA);
-        assert_eq!(lexer.next_token(), SEMICOLON);
+        let expected_result = vec![
+            ASSIGN,
+            PLUS,
+            LPAREN,
+            RPAREN,
+            LBRACE,
+            RBRACE,
+            COMMA,
+            SEMICOLON,
+            EOF,
+        ];
+
+        let true_result = lexer.collect_input_to_tokens();
+
+        assert_eq!(expected_result, true_result);
     }
 
     #[test]
@@ -150,42 +173,48 @@ mod tests {
 
         let mut lexer = Lexer::new(input);
 
-        assert_eq!(lexer.next_token(), LET);
-        assert_eq!(lexer.next_token(), IDENT("five".into()));
-        assert_eq!(lexer.next_token(), ASSIGN);
-        assert_eq!(lexer.next_token(), INT(5));
-        assert_eq!(lexer.next_token(), SEMICOLON);
-        assert_eq!(lexer.next_token(), LET);
-        assert_eq!(lexer.next_token(), IDENT("ten".into()));
-        assert_eq!(lexer.next_token(), ASSIGN);
-        assert_eq!(lexer.next_token(), INT(10));
-        assert_eq!(lexer.next_token(), SEMICOLON);
-        assert_eq!(lexer.next_token(), LET);
-        assert_eq!(lexer.next_token(), IDENT("add".into()));
-        assert_eq!(lexer.next_token(), ASSIGN);
-        assert_eq!(lexer.next_token(), FUNCTION);
-        assert_eq!(lexer.next_token(), LPAREN);
-        assert_eq!(lexer.next_token(), IDENT("x".into()));
-        assert_eq!(lexer.next_token(), COMMA);
-        assert_eq!(lexer.next_token(), IDENT("y".into()));
-        assert_eq!(lexer.next_token(), RPAREN);
-        assert_eq!(lexer.next_token(), LBRACE);
-        assert_eq!(lexer.next_token(), IDENT("x".into()));
-        assert_eq!(lexer.next_token(), PLUS);
-        assert_eq!(lexer.next_token(), IDENT("y".into()));
-        assert_eq!(lexer.next_token(), SEMICOLON);
-        assert_eq!(lexer.next_token(), RBRACE);
-        assert_eq!(lexer.next_token(), SEMICOLON);
-        assert_eq!(lexer.next_token(), LET);
-        assert_eq!(lexer.next_token(), IDENT("result".into()));
-        assert_eq!(lexer.next_token(), ASSIGN);
-        assert_eq!(lexer.next_token(), IDENT("add".into()));
-        assert_eq!(lexer.next_token(), LPAREN);
-        assert_eq!(lexer.next_token(), IDENT("five".into()));
-        assert_eq!(lexer.next_token(), COMMA);
-        assert_eq!(lexer.next_token(), IDENT("ten".into()));
-        assert_eq!(lexer.next_token(), RPAREN);
-        assert_eq!(lexer.next_token(), SEMICOLON);
-        assert_eq!(lexer.next_token(), EOF);
+        let true_result = lexer.collect_input_to_tokens();
+
+        let expected_result = vec![
+            LET,
+            IDENT("five".into()),
+            ASSIGN,
+            INT(5),
+            SEMICOLON,
+            LET,
+            IDENT("ten".into()),
+            ASSIGN,
+            INT(10),
+            SEMICOLON,
+            LET,
+            IDENT("add".into()),
+            ASSIGN,
+            FUNCTION,
+            LPAREN,
+            IDENT("x".into()),
+            COMMA,
+            IDENT("y".into()),
+            RPAREN,
+            LBRACE,
+            IDENT("x".into()),
+            PLUS,
+            IDENT("y".into()),
+            SEMICOLON,
+            RBRACE,
+            SEMICOLON,
+            LET,
+            IDENT("result".into()),
+            ASSIGN,
+            IDENT("add".into()),
+            LPAREN,
+            IDENT("five".into()),
+            COMMA,
+            IDENT("ten".into()),
+            RPAREN,
+            SEMICOLON,
+            EOF,
+        ];
+
+        assert_eq!(true_result, expected_result);
     }
 }

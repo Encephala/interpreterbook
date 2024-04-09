@@ -1,7 +1,7 @@
 use std::str;
 
 #[derive(Debug, PartialEq)]
-enum Token {
+pub enum Token {
     IDENT(String),
     INT(usize),
 
@@ -49,7 +49,7 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    fn new(input: &'a str) -> Lexer<'a> {
+    pub fn new(input: &'a str) -> Lexer<'a> {
         let mut lexer = Self {
             input: input.as_bytes(), // Assume input is always an ASCII string
             index: 0,
@@ -161,7 +161,7 @@ impl<'a> Lexer<'a> {
         return token;
     }
 
-    fn collect_input_to_tokens(&mut self) -> Vec<Token> {
+    pub fn collect_input_to_tokens(&mut self) -> Vec<Token> {
         let mut tokens = vec![];
 
         loop {

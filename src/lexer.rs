@@ -2,39 +2,39 @@ use std::str;
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
-    IDENT(String),
-    INT(usize),
+    Ident(String),
+    Int(usize),
 
-    ILLEGAL,
-    EOF,
+    Illegal,
+    Eof,
 
-    ASSIGN,
-    PLUS,
-    MINUS,
-    BANG,
-    ASTERISK,
-    SLASH,
+    Assign,
+    Plus,
+    Minus,
+    Bang,
+    Asterisk,
+    Slash,
 
-    EQUALS,
-    NOTEQUALS,
-    LESSTHAN,
-    GREATERTHAN,
+    Equals,
+    NotEquals,
+    LessThan,
+    GreaterThan,
 
-    COMMA,
-    SEMICOLON,
+    Comma,
+    Semicolon,
 
-    LPAREN,
-    RPAREN,
-    LBRACE,
-    RBRACE,
+    LParen,
+    RParen,
+    LBrace,
+    RBrace,
 
-    LET,
-    TRUE,
-    FALSE,
-    IF,
-    ELSE,
-    FUNCTION,
-    RETURN,
+    Let,
+    True,
+    False,
+    If,
+    Else,
+    Function,
+    Return,
 }
 
 use Token::*;
@@ -91,14 +91,14 @@ impl<'a> Lexer<'a> {
         }
 
         return match &self.input[start_index..self.index] {
-            b"let" => LET,
-            b"true" => TRUE,
-            b"false" => FALSE,
-            b"if" => IF,
-            b"else" => ELSE,
-            b"fn" => FUNCTION,
-            b"return" => RETURN,
-            _ => IDENT(str::from_utf8(&self.input[start_index..self.index]).unwrap().into())
+            b"let" => Let,
+            b"true" => True,
+            b"false" => False,
+            b"if" => If,
+            b"else" => Else,
+            b"fn" => Function,
+            b"return" => Return,
+            _ => Ident(str::from_utf8(&self.input[start_index..self.index]).unwrap().into())
         };
     }
 
@@ -109,7 +109,7 @@ impl<'a> Lexer<'a> {
             self.read_char()
         }
 
-        return INT(str::from_utf8(&self.input[start_index..self.index]).unwrap().parse().unwrap());
+        return Int(str::from_utf8(&self.input[start_index..self.index]).unwrap().parse().unwrap());
     }
 
     fn skip_whitespace(&mut self) {
@@ -127,33 +127,33 @@ impl<'a> Lexer<'a> {
             b'=' => {
                         if self.peek() == b'=' {
                             self.read_char();
-                            EQUALS
+                            Equals
                         } else {
-                            ASSIGN
+                            Assign
                         }
                     }
-            b'+' => PLUS,
-            b'-' => MINUS,
+            b'+' => Plus,
+            b'-' => Minus,
             b'!' => {
                         if self.peek() == b'=' {
                             self.read_char();
-                            NOTEQUALS
+                            NotEquals
                         } else {
-                            BANG
+                            Bang
                         }
                     }
-            b'*' => ASTERISK,
-            b'/' => SLASH,
-            b'<' => LESSTHAN,
-            b'>' => GREATERTHAN,
-            b',' => COMMA,
-            b';' => SEMICOLON,
-            b'(' => LPAREN,
-            b')' => RPAREN,
-            b'{' => LBRACE,
-            b'}' => RBRACE,
-            0 => EOF,
-            _ => ILLEGAL
+            b'*' => Asterisk,
+            b'/' => Slash,
+            b'<' => LessThan,
+            b'>' => GreaterThan,
+            b',' => Comma,
+            b';' => Semicolon,
+            b'(' => LParen,
+            b')' => RParen,
+            b'{' => LBrace,
+            b'}' => RBrace,
+            0 => Eof,
+            _ => Illegal
         };
 
         self.read_char();
@@ -169,7 +169,7 @@ impl<'a> Lexer<'a> {
 
             tokens.push(token);
 
-            if tokens.last().unwrap() == &EOF {
+            if tokens.last().unwrap() == &Eof {
                 break;
             }
         }
@@ -190,15 +190,15 @@ mod tests {
         let mut lexer = Lexer::new(input);
 
         let expected_result = vec![
-            ASSIGN,
-            PLUS,
-            LPAREN,
-            RPAREN,
-            LBRACE,
-            RBRACE,
-            COMMA,
-            SEMICOLON,
-            EOF,
+            Assign,
+            Plus,
+            LParen,
+            RParen,
+            LBrace,
+            RBrace,
+            Comma,
+            Semicolon,
+            Eof,
         ];
 
         let true_result = lexer.collect_input_to_tokens();
@@ -222,43 +222,43 @@ mod tests {
         let true_result = lexer.collect_input_to_tokens();
 
         let expected_result = vec![
-            LET,
-            IDENT("five".into()),
-            ASSIGN,
-            INT(5),
-            SEMICOLON,
-            LET,
-            IDENT("ten".into()),
-            ASSIGN,
-            INT(10),
-            SEMICOLON,
-            LET,
-            IDENT("add".into()),
-            ASSIGN,
-            FUNCTION,
-            LPAREN,
-            IDENT("x".into()),
-            COMMA,
-            IDENT("y".into()),
-            RPAREN,
-            LBRACE,
-            IDENT("x".into()),
-            PLUS,
-            IDENT("y".into()),
-            SEMICOLON,
-            RBRACE,
-            SEMICOLON,
-            LET,
-            IDENT("result".into()),
-            ASSIGN,
-            IDENT("add".into()),
-            LPAREN,
-            IDENT("five".into()),
-            COMMA,
-            IDENT("ten".into()),
-            RPAREN,
-            SEMICOLON,
-            EOF,
+            Let,
+            Ident("five".into()),
+            Assign,
+            Int(5),
+            Semicolon,
+            Let,
+            Ident("ten".into()),
+            Assign,
+            Int(10),
+            Semicolon,
+            Let,
+            Ident("add".into()),
+            Assign,
+            Function,
+            LParen,
+            Ident("x".into()),
+            Comma,
+            Ident("y".into()),
+            RParen,
+            LBrace,
+            Ident("x".into()),
+            Plus,
+            Ident("y".into()),
+            Semicolon,
+            RBrace,
+            Semicolon,
+            Let,
+            Ident("result".into()),
+            Assign,
+            Ident("add".into()),
+            LParen,
+            Ident("five".into()),
+            Comma,
+            Ident("ten".into()),
+            RParen,
+            Semicolon,
+            Eof,
         ];
 
         assert_eq!(true_result, expected_result);
@@ -282,44 +282,44 @@ mod tests {
         let true_result = lexer.collect_input_to_tokens();
 
         let expected_result = vec![
-            BANG,
-            MINUS,
-            SLASH,
-            ASTERISK,
-            INT(5),
-            SEMICOLON,
-            INT(5),
-            LESSTHAN,
-            INT(10),
-            GREATERTHAN,
-            INT(5),
-            SEMICOLON,
-            IF,
-            LPAREN,
-            INT(5),
-            LESSTHAN,
-            INT(10),
-            RPAREN,
-            LBRACE,
-            RETURN,
-            TRUE,
-            SEMICOLON,
-            RBRACE,
-            ELSE,
-            LBRACE,
-            RETURN,
-            FALSE,
-            SEMICOLON,
-            RBRACE,
-            INT(10),
-            EQUALS,
-            INT(10),
-            SEMICOLON,
-            INT(10),
-            NOTEQUALS,
-            INT(9),
-            SEMICOLON,
-            EOF
+            Bang,
+            Minus,
+            Slash,
+            Asterisk,
+            Int(5),
+            Semicolon,
+            Int(5),
+            LessThan,
+            Int(10),
+            GreaterThan,
+            Int(5),
+            Semicolon,
+            If,
+            LParen,
+            Int(5),
+            LessThan,
+            Int(10),
+            RParen,
+            LBrace,
+            Return,
+            True,
+            Semicolon,
+            RBrace,
+            Else,
+            LBrace,
+            Return,
+            False,
+            Semicolon,
+            RBrace,
+            Int(10),
+            Equals,
+            Int(10),
+            Semicolon,
+            Int(10),
+            NotEquals,
+            Int(9),
+            Semicolon,
+            Eof
         ];
 
         assert_eq!(true_result, expected_result);

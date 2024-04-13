@@ -58,7 +58,7 @@ impl<'a> Parser<'a> {
         self.next_token = self.lexer.next_token();
     }
 
-    fn check_and_proceed(&mut self, token: Token) -> Result<(), String> {
+    fn check_and_skip(&mut self, token: Token) -> Result<(), String> {
         if self.token != token {
             return Err(
                 format!("Expected token {:?}, found {:?}", token, &self.token)
@@ -135,11 +135,11 @@ impl<'a> Parser<'a> {
 
         self.next_token();
 
-        self.check_and_proceed(Token::Assign)?;
+        self.check_and_skip(Token::Assign)?;
 
         let value = self.parse_expression(Precedence::Lowest)?;
 
-        self.check_and_proceed(Token::Semicolon)?;
+        self.check_and_skip(Token::Semicolon)?;
 
         return Ok(Statement::Let { name, value });
     }
@@ -149,7 +149,7 @@ impl<'a> Parser<'a> {
 
         let value = self.parse_expression(Precedence::Lowest)?;
 
-        self.check_and_proceed(Token::Semicolon)?;
+        self.check_and_skip(Token::Semicolon)?;
 
         return Ok(Statement::Return { value });
     }
@@ -195,15 +195,7 @@ impl<'a> Parser<'a> {
     /// - `Some(Err(_))` if infix is defined but couldn't parse correctly
     /// - `Some(Ok(_))` if all went well
     fn parse_infix(&mut self) -> Option<Result<Expression, String>> {
-        use Token::*;
-
-        let result = match &self.token {
-            _ => None
-        };
-
-        self.next_token();
-
-        return result;
+        todo!();
     }
 }
 

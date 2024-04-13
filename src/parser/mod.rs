@@ -10,12 +10,26 @@ struct Program {
 enum Statement {
     Let { name: String, value: Expression },
     Return { value: Expression },
+    ExpressionStatement { value: Expression },
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Expression {
+    Ident(String),
     Todo,
+}
+
+// PartialOrd default implementation defines the order to be the order in which they were defined
+#[derive(PartialEq, PartialOrd)]
+enum Precedence {
+    Lowest,
+    Equals,
+    LessGreater,
+    Sum,
+    Product,
+    Prefix,
+    Call
 }
 
 
@@ -44,7 +58,7 @@ impl<'a> Parser<'a> {
         self.next_token = self.lexer.next_token();
     }
 
-    fn check_and_proceed(&mut self, token: Token) -> Result<&str, String> {
+    fn check_and_proceed(&mut self, token: Token) -> Result<(), String> {
         if self.token != token {
             return Err(
                 format!("Expected token {:?}, found {:?}", token, &self.token)
@@ -53,8 +67,13 @@ impl<'a> Parser<'a> {
 
         self.next_token();
 
-        // Dummy return
-        return Ok("");
+        return Ok(());
+    }
+
+    fn skip_if_token(&mut self, token: Token) {
+        if self.token == token {
+            self.next_token();
+        }
     }
 
     fn consume_until_semicolon(&mut self) {
@@ -97,7 +116,7 @@ impl<'a> Parser<'a> {
         return match self.token {
             Let => self.parse_let_statement(),
             Return => self.parse_return_statement(),
-            _ => Err("Unknown token matched".into())
+            _ => self.parse_expression_statement()
         };
     }
 
@@ -118,7 +137,7 @@ impl<'a> Parser<'a> {
 
         self.check_and_proceed(Token::Assign)?;
 
-        let value = self.parse_expression()?;
+        let value = self.parse_expression(Precedence::Lowest)?;
 
         self.check_and_proceed(Token::Semicolon)?;
 
@@ -128,17 +147,63 @@ impl<'a> Parser<'a> {
     fn parse_return_statement(&mut self) -> Result<Statement, String> {
         self.next_token();
 
-        let value = self.parse_expression()?;
+        let value = self.parse_expression(Precedence::Lowest)?;
 
         self.check_and_proceed(Token::Semicolon)?;
 
         return Ok(Statement::Return { value });
     }
 
-    fn parse_expression(&mut self) -> Result<Expression, String> {
+    fn parse_expression_statement(&mut self) -> Result<Statement, String> {
+        let value = self.parse_expression(Precedence::Lowest)?;
+
+        self.skip_if_token(Token::Semicolon);
+
+        return Ok(Statement::ExpressionStatement { value });
+    }
+
+    fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression, String> {
+        if let Some(expression) = self.parse_prefix() {
+            return expression;
+        }
+
+        // TODO: Handle what should happen if we don't have a matching prefix parser
+        return Ok(Expression::Todo);
+    }
+
+    /// Return types:
+    ///
+    /// - `None` if prefix isn't defined for some token
+    /// - `Some(Err(_))` if prefix is defined but couldn't parse correctly
+    /// - `Some(Ok(_))` if all went well
+    fn parse_prefix(&mut self) -> Option<Result<Expression, String>> {
+        use Token::*;
+
+        let result = match &self.token {
+            Ident(name) => Some(Ok(Expression::Ident(name.clone()))),
+            _ => None
+        };
+
         self.next_token();
 
-        return Ok(Expression::Todo);
+        return result;
+    }
+
+    /// Return types:
+    ///
+    /// - `None` if infix isn't defined for some token
+    /// - `Some(Err(_))` if infix is defined but couldn't parse correctly
+    /// - `Some(Ok(_))` if all went well
+    fn parse_infix(&mut self) -> Option<Result<Expression, String>> {
+        use Token::*;
+
+        let result = match &self.token {
+            _ => None
+        };
+
+        self.next_token();
+
+        return result;
     }
 }
 
@@ -229,6 +294,27 @@ mod tests {
         if let Statement::Return { .. } = statement {
         } else {
             panic!("Testing statement {:?} that isn't a Return statement", statement);
+        }
+    }
+
+    #[test]
+    fn identifier_expression() {
+        let input = "foobar;";
+
+        let mut parser = Parser::new(input);
+
+        let program = parser.parse_program();
+
+        check_parser_errors(&parser, &program);
+
+        assert_eq!(program.statements.len(), 1);
+
+        let statement = program.statements.first().unwrap();
+
+        if let Statement::ExpressionStatement { value } = statement {
+            assert_eq!(value, &Expression::Ident("foobar".into()));
+        } else {
+            panic!("Testing statement {:?} that isn't an Expression statement", statement);
         }
     }
 }

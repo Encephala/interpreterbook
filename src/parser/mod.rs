@@ -17,6 +17,7 @@ enum Statement {
 #[derive(Debug, PartialEq)]
 enum Expression {
     Ident(String),
+    Int(usize),
     Todo,
 }
 
@@ -181,6 +182,7 @@ impl<'a> Parser<'a> {
 
         let result = match &self.token {
             Ident(name) => Some(Ok(Expression::Ident(name.clone()))),
+            Int(value) => Some(Ok(Expression::Int(value.parse().unwrap()))),
             _ => None
         };
 
@@ -242,7 +244,7 @@ mod tests {
     }
 
     fn validate_single_let_statement(statement: &Statement, expected_name: &str) {
-        if let Statement::Let{ name, value } = statement {
+        if let Statement::Let{ name, value: _value } = statement {
             assert_eq!(name, expected_name);
         } else {
             panic!("Testing statement {:?} that isn't a Let statement", statement);
@@ -257,7 +259,7 @@ mod tests {
 
         let mut parser = Parser::new(input);
 
-        let program = parser.parse_program();
+        let _ = parser.parse_program();
 
         assert_eq!(parser.errors.len(), 3);
 
@@ -298,6 +300,23 @@ mod tests {
             assert_eq!(value, &Expression::Ident("foobar".into()));
         } else {
             panic!("Testing statement {:?} that isn't an Expression statement", statement);
+        }
+    }
+
+    #[test]
+    fn integer_expression() {
+        let input = "5;";
+
+        let program = parse_then_check_errors_and_length(input, 1);
+
+        let statement = program.statements.first().unwrap();
+
+        dbg!(&statement);
+
+        if let Statement::ExpressionStatement { value } = statement {
+            assert_eq!(value, &Expression::Int(5));
+        } else {
+            panic!("Testing statement {:?} that isn't an Integer statement", statement);
         }
     }
 }

@@ -104,10 +104,6 @@ impl<'a> Parser<'a> {
             }
         }
 
-        if !self.errors.is_empty() {
-            println!("")
-        }
-
         return result;
     }
 

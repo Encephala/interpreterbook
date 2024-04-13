@@ -18,7 +18,7 @@ pub fn start() {
         // Exit on "stop", "exit" or CTRL+D
         if input == "exit\n" {
             break;
-        } else if input == "" {
+        } else if input.is_empty() {
             println!();
             break;
         }

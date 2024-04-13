@@ -262,9 +262,9 @@ mod tests {
         assert_eq!(parser.errors.len(), 3);
 
         assert_eq!(parser.errors, vec![
-            "Failed to parse statement: Expected token Assign, found Int(5)",
+            "Failed to parse statement: Expected token Assign, found Int(\"5\")",
             "Failed to parse statement: Token in let Assign not an identifier",
-            "Failed to parse statement: Token in let Int(838383) not an identifier"
+            "Failed to parse statement: Token in let Int(\"838383\") not an identifier"
         ]);
     }
 

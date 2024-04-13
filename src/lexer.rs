@@ -3,7 +3,7 @@ use std::str;
 #[derive(Debug, PartialEq)]
 pub enum Token {
     Ident(String),
-    Int(usize),
+    Int(String),
 
     Illegal,
     Eof,
@@ -109,7 +109,7 @@ impl<'a> Lexer<'a> {
             self.read_char()
         }
 
-        return Int(str::from_utf8(&self.input[start_index..self.index]).unwrap().parse().unwrap());
+        return Int(str::from_utf8(&self.input[start_index..self.index]).unwrap().into());
     }
 
     fn skip_whitespace(&mut self) {
@@ -225,12 +225,12 @@ mod tests {
             Let,
             Ident("five".into()),
             Assign,
-            Int(5),
+            Int("5".into()),
             Semicolon,
             Let,
             Ident("ten".into()),
             Assign,
-            Int(10),
+            Int("10".into()),
             Semicolon,
             Let,
             Ident("add".into()),
@@ -286,19 +286,19 @@ mod tests {
             Minus,
             Slash,
             Asterisk,
-            Int(5),
+            Int("5".into()),
             Semicolon,
-            Int(5),
+            Int("5".into()),
             LessThan,
-            Int(10),
+            Int("10".into()),
             GreaterThan,
-            Int(5),
+            Int("5".into()),
             Semicolon,
             If,
             LParen,
-            Int(5),
+            Int("5".into()),
             LessThan,
-            Int(10),
+            Int("10".into()),
             RParen,
             LBrace,
             Return,
@@ -311,13 +311,13 @@ mod tests {
             False,
             Semicolon,
             RBrace,
-            Int(10),
+            Int("10".into()),
             Equals,
-            Int(10),
+            Int("10".into()),
             Semicolon,
-            Int(10),
+            Int("10".into()),
             NotEquals,
-            Int(9),
+            Int("9".into()),
             Semicolon,
             Eof
         ];

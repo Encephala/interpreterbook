@@ -1,2 +1,2 @@
 # interpreterbook
-Private repo for interpreterbook.com
+Repo for interpreterbook.com

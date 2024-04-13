@@ -204,25 +204,16 @@ impl<'a> Parser<'a> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn parse_let_statements_literal_value() {
-        let input = "let x = 5;
-        let y = 10;
-        let foobar = 838383;";
-
+    fn parse_then_check_errors_and_length(input: &str, expected_length: usize) -> Program {
         let mut parser = Parser::new(input);
 
         let program = parser.parse_program();
 
         check_parser_errors(&parser, &program);
 
-        assert_eq!(program.statements.len(), 3);
+        assert_eq!(program.statements.len(), expected_length);
 
-        let expected_names = vec!["x", "y", "foobar"];
-
-        program.statements.iter().zip(expected_names).for_each(|(statement, name)| {
-            validate_single_let_statement(statement, name)
-        });
+        return program;
     }
 
     fn check_parser_errors(parser: &Parser, program: &Program) {
@@ -233,6 +224,21 @@ mod tests {
                 program.statements
             );
         }
+    }
+
+    #[test]
+    fn parse_let_statements_literal_value() {
+        let input = "let x = 5;
+        let y = 10;
+        let foobar = 838383;";
+
+        let program = parse_then_check_errors_and_length(input, 3);
+
+        let expected_names = vec!["x", "y", "foobar"];
+
+        program.statements.iter().zip(expected_names).for_each(|(statement, name)| {
+            validate_single_let_statement(statement, name)
+        });
     }
 
     fn validate_single_let_statement(statement: &Statement, expected_name: &str) {
@@ -253,9 +259,6 @@ mod tests {
 
         let program = parser.parse_program();
 
-        dbg!(&program.statements);
-        dbg!(&parser.errors);
-
         assert_eq!(parser.errors.len(), 3);
 
         assert_eq!(parser.errors, vec![
@@ -271,13 +274,7 @@ mod tests {
         return 10;
         return 993322;";
 
-        let mut parser = Parser::new(input);
-
-        let program = parser.parse_program();
-
-        check_parser_errors(&parser, &program);
-
-        assert_eq!(program.statements.len(), 3);
+        let program = parse_then_check_errors_and_length(input, 3);
 
         program.statements.iter().for_each(|statement| validate_single_return_statement(statement));
     }
@@ -293,13 +290,7 @@ mod tests {
     fn identifier_expression() {
         let input = "foobar;";
 
-        let mut parser = Parser::new(input);
-
-        let program = parser.parse_program();
-
-        check_parser_errors(&parser, &program);
-
-        assert_eq!(program.statements.len(), 1);
+        let program = parse_then_check_errors_and_length(input, 1);
 
         let statement = program.statements.first().unwrap();
 

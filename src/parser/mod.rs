@@ -8,13 +8,8 @@ struct Program {
 
 #[derive(Debug)]
 enum Statement {
-    Let{ name: String, value: Expression },
-}
-
-#[derive(Debug)]
-struct LetStatement {
-    name: String,
-    value: Expression
+    Let { name: String, value: Expression },
+    Return { value: Expression },
 }
 
 
@@ -101,6 +96,7 @@ impl<'a> Parser<'a> {
 
         return match self.token {
             Let => self.parse_let_statement(),
+            Return => self.parse_return_statement(),
             _ => Err("Unknown token matched".into())
         };
     }
@@ -122,20 +118,27 @@ impl<'a> Parser<'a> {
 
         self.check_and_proceed(Token::Assign)?;
 
-        // TODO make this the code when parse expression works
-        // let value = self.parse_expression()?;
-
-        let value = Expression::Todo;
-
-        self.next_token();
+        let value = self.parse_expression()?;
 
         self.check_and_proceed(Token::Semicolon)?;
 
         return Ok(Statement::Let { name, value });
     }
 
-    fn parse_expression(&mut self) -> Result<Statement, String> {
-        todo!();
+    fn parse_return_statement(&mut self) -> Result<Statement, String> {
+        self.next_token();
+
+        let value = self.parse_expression()?;
+
+        self.check_and_proceed(Token::Semicolon)?;
+
+        return Ok(Statement::Return { value });
+    }
+
+    fn parse_expression(&mut self) -> Result<Expression, String> {
+        self.next_token();
+
+        return Ok(Expression::Todo);
     }
 }
 
@@ -154,6 +157,18 @@ mod tests {
 
         let program = parser.parse_program();
 
+        check_parser_errors(&parser, &program);
+
+        assert_eq!(program.statements.len(), 3);
+
+        let expected_names = vec!["x", "y", "foobar"];
+
+        program.statements.iter().zip(expected_names).for_each(|(statement, name)| {
+            validate_single_let_statement(statement, name)
+        });
+    }
+
+    fn check_parser_errors(parser: &Parser, program: &Program) {
         if !parser.errors.is_empty() {
             panic!("Got {} parsing error(s):\n{:?}\nSucceeded in parsing: {:?}",
                 parser.errors.len(),
@@ -161,17 +176,9 @@ mod tests {
                 program.statements
             );
         }
-
-        assert_eq!(program.statements.len(), 3);
-
-        let expected_names = vec!["x", "y", "foobar"];
-
-        program.statements.iter().zip(expected_names).for_each(|(statement, name)| {
-            test_single_let_statement(statement, name)
-        })
     }
 
-    fn test_single_let_statement(statement: &Statement, expected_name: &str) {
+    fn validate_single_let_statement(statement: &Statement, expected_name: &str) {
         if let Statement::Let{ name, value } = statement {
             assert_eq!(name, expected_name);
         } else {
@@ -199,5 +206,29 @@ mod tests {
             "Failed to parse statement: Token in let Assign not an identifier",
             "Failed to parse statement: Token in let Int(838383) not an identifier"
         ]);
+    }
+
+    #[test]
+    fn parse_return_literal_value() {
+        let input = "return 5;
+        return 10;
+        return 993322;";
+
+        let mut parser = Parser::new(input);
+
+        let program = parser.parse_program();
+
+        check_parser_errors(&parser, &program);
+
+        assert_eq!(program.statements.len(), 3);
+
+        program.statements.iter().for_each(|statement| validate_single_return_statement(statement));
+    }
+
+    fn validate_single_return_statement(statement: &Statement) {
+        if let Statement::Return { .. } = statement {
+        } else {
+            panic!("Testing statement {:?} that isn't a Return statement", statement);
+        }
     }
 }

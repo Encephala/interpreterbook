@@ -18,11 +18,27 @@ enum Statement {
 enum Expression {
     Ident(String),
     Int(usize),
-    Todo,
+    PrefixExpression { operator: PrefixOperator, right: Box<Expression> },
+}
+
+#[derive(Debug, PartialEq)]
+enum PrefixOperator {
+    Minus,
+    Bang,
+}
+
+impl From<&Token> for PrefixOperator {
+    fn from(value: &Token) -> Self {
+        match value {
+            Token::Bang => PrefixOperator::Bang,
+            Token::Minus => PrefixOperator::Minus,
+            _ => panic!("I did something stupid")
+        }
+    }
 }
 
 // PartialOrd default implementation defines the order to be the order in which they were defined
-#[derive(PartialEq, PartialOrd)]
+#[derive(Debug, PartialEq, PartialOrd)]
 enum Precedence {
     Lowest,
     Equals,
@@ -34,6 +50,7 @@ enum Precedence {
 }
 
 
+#[derive(Debug)]
 struct Parser<'a> {
     lexer: Lexer<'a>,
     token: Token,
@@ -162,10 +179,9 @@ impl<'a> Parser<'a> {
     fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression, String> {
         if let Some(expression) = self.parse_prefix() {
             return expression;
+        } else {
+            return Err(format!("No prefix parser found for {:?}", self.token));
         }
-
-        // TODO: Handle what should happen if we don't have a matching prefix parser
-        return Ok(Expression::Todo);
     }
 
     /// Return types:
@@ -179,12 +195,28 @@ impl<'a> Parser<'a> {
         let result = match &self.token {
             Ident(name) => Some(Ok(Expression::Ident(name.clone()))),
             Int(value) => Some(Ok(Expression::Int(value.parse().unwrap()))),
+            Bang => Some(self.parse_prefix_expression()),
+            Minus => Some(self.parse_prefix_expression()),
             _ => None
         };
 
-        self.next_token();
+        if result.is_some() {
+            self.next_token();
+        }
 
         return result;
+    }
+
+    fn parse_prefix_expression(&mut self) -> Result<Expression, String> {
+        let operator: PrefixOperator = (&self.token).into();
+
+        // Skip past the operator itself
+        self.next_token();
+
+        return Ok(Expression::PrefixExpression {
+            operator,
+            right: Box::new(self.parse_expression(Precedence::Prefix)?)
+        });
     }
 
     /// Return types:
@@ -314,5 +346,32 @@ mod tests {
         } else {
             panic!("Testing statement {:?} that isn't an Integer statement", statement);
         }
+    }
+
+    #[test]
+    fn prefix_operators() {
+        struct TestCase<'a>(&'a str, PrefixOperator, Expression);
+
+        let inputs = [
+            TestCase("!5;", PrefixOperator::Bang, Expression::Int(5)),
+            TestCase("-15;", PrefixOperator::Minus, Expression::Int(15)),
+        ];
+
+        inputs.iter().for_each(|test_case| {
+            let program = parse_then_check_errors_and_length(test_case.0, 1);
+
+            let statement = program.statements.first().unwrap();
+
+            if let Statement::ExpressionStatement { value } = statement {
+                if let Expression::PrefixExpression { operator, right } = value {
+                    assert_eq!(operator, &test_case.1);
+                    assert_eq!(right.as_ref(), &test_case.2);
+                } else {
+                    panic!("Testing expression {:?} that isn't a Prefix expression", value);
+                }
+            } else {
+                panic!("Testing statement {:?} that isn't an Integer statement", statement);
+            }
+        })
     }
 }

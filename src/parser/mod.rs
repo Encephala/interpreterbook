@@ -97,7 +97,7 @@ impl<'a> Parser<'a> {
                     self.errors.push(format!("Failed to parse statement: {message}"));
 
                     // Ignore remainder of statement
-                    // Idk if this is good behaviour; if we ignore a statement, future code probably doesn't parse
+                    // Idk if this is good behaviour
                     self.consume_until_semicolon();
                 }
             }

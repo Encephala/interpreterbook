@@ -267,6 +267,7 @@ impl<'a> Parser<'a> {
             True | False => Ok(Box::new(Expression::Bool(self.token == True))),
             Bang => self.parse_prefix_expression(),
             Minus => self.parse_prefix_expression(),
+            LParen => self.parse_grouped_expression(),
             _ => Err(format!("No prefix parser found for {:?}", self.token))
         };
 
@@ -329,5 +330,19 @@ impl<'a> Parser<'a> {
             operator,
             right: self.parse_expression(&precedence)?
         }));
+    }
+
+    fn parse_grouped_expression(&mut self) -> Result<Box<Expression>, String> {
+        self.next_token();
+
+        let result = self.parse_expression(&Precedence::Lowest);
+
+        self.next_token();
+
+        if self.token != Token::RParen {
+            return Err(format!("Expected token {:?}, found {:?}", Token::RParen, &self.token));
+        }
+
+        return result;
     }
 }

@@ -241,7 +241,17 @@ fn infix_operators_correct_precedence() {
             }),
             operator: InfixOperator::Equals,
             right: Box::new(Expression::Bool(true))
-        })
+        }),
+
+        TestCase("(5 + 6) * 2", InfixExpression {
+            left: Box::new(InfixExpression {
+                left: Box::new(Int(5)),
+                operator: InfixOperator::Plus,
+                right: Box::new(Int(6))
+            }),
+            operator: InfixOperator::Multiply,
+            right: Box::new(Int(2))
+        }),
     ].iter().for_each(|test_case| {
         let program = parse_then_check_errors_and_length(test_case.0, 1);
 

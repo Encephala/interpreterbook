@@ -143,8 +143,8 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn consume_until_semicolon(&mut self) {
-        while self.token != Token::Semicolon {
+    fn consume_until_statement_end(&mut self) {
+        while self.token != Token::Semicolon && self.token != Token::Eof {
             self.next_token();
         }
 
@@ -165,7 +165,7 @@ impl<'a> Parser<'a> {
 
                     // Ignore remainder of statement
                     // Idk if this is good behaviour
-                    self.consume_until_semicolon();
+                    self.consume_until_statement_end();
                 }
             }
         }

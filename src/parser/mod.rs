@@ -16,7 +16,7 @@ enum Statement {
 }
 
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq)]
 enum Expression {
     Ident(String),
     Int(usize),
@@ -24,7 +24,7 @@ enum Expression {
     InfixExpression { left: Box<Expression>, operator: InfixOperator, right: Box<Expression> },
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq)]
 enum PrefixOperator {
     Minus,
     Bang,
@@ -40,7 +40,7 @@ impl From<&Token> for PrefixOperator {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq)]
 enum InfixOperator {
     Plus,
     Minus,

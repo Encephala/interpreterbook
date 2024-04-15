@@ -115,12 +115,16 @@ fn integer_expression() {
 }
 
 #[test]
-fn prefix_operators_integer_literals() {
+fn prefix_operators() {
     struct TestCase<'a>(&'a str, PrefixOperator, Expression);
 
     let inputs = [
         TestCase("!5;", PrefixOperator::Bang, Expression::Int(5)),
         TestCase("-15;", PrefixOperator::Minus, Expression::Int(15)),
+        TestCase("!!false;", PrefixOperator::Bang, Expression::PrefixExpression {
+            operator: PrefixOperator::Bang,
+            right: Box::new(Expression::Bool(false)),
+        })
     ];
 
     inputs.iter().for_each(|test_case| {
@@ -227,6 +231,16 @@ fn infix_operators_correct_precedence() {
                 operator: InfixOperator::GreaterThan,
                 right: Box::new(Int(4))
             })
+        }),
+
+        TestCase("3 < 5 == true", InfixExpression {
+            left: Box::new(InfixExpression {
+                left: Box::new(Int(3)),
+                operator: InfixOperator::LessThan,
+                right: Box::new(Int(5))
+            }),
+            operator: InfixOperator::Equals,
+            right: Box::new(Expression::Bool(true))
         })
     ].iter().for_each(|test_case| {
         let program = parse_then_check_errors_and_length(test_case.0, 1);
@@ -239,4 +253,18 @@ fn infix_operators_correct_precedence() {
             panic!("Testing statement {:?} that isn't an Expression statement", statement);
         }
     });
+}
+
+#[test]
+fn boolean_expression() {
+    let input = "true; false";
+
+    let program = parse_then_check_errors_and_length(input, 2);
+
+    dbg!(&program.statements);
+
+    assert_eq!(program.statements, vec![
+        Statement::ExpressionStatement { value: Box::new(Expression::Bool(true)) },
+        Statement::ExpressionStatement { value: Box::new(Expression::Bool(false)) },
+    ]);
 }

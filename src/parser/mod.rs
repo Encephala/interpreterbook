@@ -23,6 +23,7 @@ enum Statement {
 enum Expression {
     Ident(String),
     Int(usize),
+    Bool(bool),
     PrefixExpression { operator: PrefixOperator, right: Box<Expression> },
     InfixExpression { left: Box<Expression>, operator: InfixOperator, right: Box<Expression> },
 }
@@ -263,6 +264,7 @@ impl<'a> Parser<'a> {
         let result = match &self.token {
             Ident(name) => Ok(Box::new(Expression::Ident(name.clone()))),
             Int(value) => Ok(Box::new(Expression::Int(value.parse().unwrap()))),
+            True | False => Ok(Box::new(Expression::Bool(self.token == True))),
             Bang => self.parse_prefix_expression(),
             Minus => self.parse_prefix_expression(),
             _ => Err(format!("No prefix parser found for {:?}", self.token))

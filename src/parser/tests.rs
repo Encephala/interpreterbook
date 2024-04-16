@@ -274,8 +274,6 @@ fn boolean_expression() {
 
     let program = parse_then_check_errors_and_length(input, 2);
 
-    dbg!(&program.statements);
-
     assert_eq!(program.statements, vec![
         Statement::ExpressionStatement { value: Box::new(Expression::Bool(true)) },
         Statement::ExpressionStatement { value: Box::new(Expression::Bool(false)) },

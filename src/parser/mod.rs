@@ -473,17 +473,12 @@ impl<'a> Parser<'a> {
 
         self.next_token();
 
-        dbg!(&self.token);
-
         while self.token == Token::Comma {
             self.next_token();
-            dbg!(&self.token);
 
             result.push(*self.parse_expression(&Precedence::Lowest)?);
-            dbg!(&self.token);
 
             self.next_token();
-            dbg!(&self.token);
         }
 
         return Ok(result);

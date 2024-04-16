@@ -1,6 +1,4 @@
-use crate::parser::InfixOperator;
-
-use super::parser::{Statement, Expression, Program, PrefixOperator};
+use super::parser::{Statement, Expression, Program, PrefixOperator, InfixOperator};
 
 #[cfg(test)]
 mod tests;
@@ -18,6 +16,15 @@ impl Object {
         match &self {
             Object::Int(value) => format!("{value}"),
             Object::Bool(value) => format!("{value}"),
+        }
+    }
+}
+
+impl std::fmt::Display for Object {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match &self {
+            Int(value) => write!(f, "{}", value),
+            Bool(value) => write!(f, "{}", value),
         }
     }
 }

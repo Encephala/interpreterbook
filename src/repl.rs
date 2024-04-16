@@ -31,6 +31,13 @@ pub fn start() {
             continue;
         }
 
-        println!("{:?}", program.eval());
+        let result = program.eval();
+
+        if let Err(message) = result {
+            println!("Error while executing: {:?}", message);
+            continue;
+        }
+
+        println!("{}", result.unwrap());
     }
 }

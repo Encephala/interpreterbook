@@ -35,10 +35,11 @@ enum Expression {
     PrefixExpression { operator: PrefixOperator, right: Box<Expression> },
     InfixExpression { left: Box<Expression>, operator: InfixOperator, right: Box<Expression> },
     If { condition: Box<Expression>, consequence: Option<BlockStatement>, alternative: Option<BlockStatement> },
-    Function {
-        parameters: Vec<String>,
-        body: BlockStatement
-    },
+    Function { parameters: Vec<String>, body: BlockStatement },
+    CallExpression {
+        function: Box<Expression>, // Always either Ident or Function
+        arguments: Vec<Expression>
+    }
 }
 
 impl From<&Token> for String {
@@ -139,6 +140,7 @@ impl<'a> Parser<'a> {
             (Token::Minus, Precedence::Sum),
             (Token::Slash, Precedence::Product),
             (Token::Asterisk, Precedence::Product),
+            (Token::LParen, Precedence::Call)
         ].iter().for_each(|(token, precedence)| { precedence_map.insert(token, precedence); });
 
         return Self { lexer, token: first_token, next_token: second_token, precedence_map };
@@ -331,6 +333,7 @@ impl<'a> Parser<'a> {
             NotEquals => self.parse_infix_expression(left),
             LessThan => self.parse_infix_expression(left),
             GreaterThan => self.parse_infix_expression(left),
+            LParen => self.parse_call_expression(left),
             _ => Err(format!("No infix parser found for {:?}", self.token))
         };
 
@@ -428,11 +431,11 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_function_parameters(&mut self) -> Result<Vec<String>, String> {
-        if self.token == Token::RParen {
-            return Ok(vec![]);
-        }
-
         let mut result = vec![];
+
+        if self.token == Token::RParen {
+            return Ok(result);
+        }
 
         result.push((&self.token).into());
 
@@ -444,6 +447,43 @@ impl<'a> Parser<'a> {
             result.push((&self.token).into());
 
             self.next_token();
+        }
+
+        return Ok(result);
+    }
+
+    fn parse_call_expression(&mut self, left: Box<Expression>) -> Result<Box<Expression>, String> {
+        self.next_token();
+
+        let arguments = self.parse_call_arguments()?;
+
+        self.check_and_skip(&Token::RParen)?;
+
+        return Ok(Box::new(Expression::CallExpression { function: left, arguments }))
+    }
+
+    fn parse_call_arguments(&mut self) -> Result<Vec<Expression>, String> {
+        let mut result = vec![];
+
+        if self.token == Token::RParen {
+            return Ok(result)
+        }
+
+        result.push(*self.parse_expression(&Precedence::Lowest)?);
+
+        self.next_token();
+
+        dbg!(&self.token);
+
+        while self.token == Token::Comma {
+            self.next_token();
+            dbg!(&self.token);
+
+            result.push(*self.parse_expression(&Precedence::Lowest)?);
+            dbg!(&self.token);
+
+            self.next_token();
+            dbg!(&self.token);
         }
 
         return Ok(result);

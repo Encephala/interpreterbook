@@ -211,6 +211,19 @@ fn infix_operators_correct_precedence() {
             })
         }),
 
+        TestCase("add(a + b * c)", CallExpression {
+            function: Box::new(Expression::Ident("add".into())),
+            arguments: vec![InfixExpression {
+                left: Box::new(Ident("a".into())),
+                operator: InfixOperator::Plus,
+                right: Box::new(InfixExpression {
+                    left: Box::new(Ident("b".into())),
+                    operator: InfixOperator::Multiply,
+                    right: Box::new(Ident("c".into()))
+                })
+            }]
+        }),
+
         TestCase("5 < 4 != 3 > 4", InfixExpression {
             left: Box::new(InfixExpression {
                 left: Box::new(Int(5)),
@@ -391,4 +404,32 @@ fn function_literal() {
         panic!("Expression not a Function expression");
     }
 }
+
+#[test]
+fn call_expressions() {
+    use Expression::*;
+
+    let input = "add(1, 2 * 3, 4 + 5)";
+
+    let program = parse_then_check_errors_and_length(input, 1);
+
+    let statement = program.first_statement();
+
+    let value = check_and_destruct_expression_statement(statement);
+
+    if let CallExpression { function, arguments } = value {
+        if let Ident(name) = function.as_ref() {
+            assert_eq!(*name, "add".to_string());
+        } else {
+            panic!("Function expression not an identifier");
+        }
+
+        assert_eq!(*arguments, vec![
+            Int(1),
+            InfixExpression { left: Box::new(Int(2)), operator: InfixOperator::Multiply, right: Box::new(Int(3)) },
+            InfixExpression { left: Box::new(Int(4)), operator: InfixOperator::Plus, right: Box::new(Int(5)) }
+        ])
+    } else {
+        panic!("Expression not a Call expression");
+    }
 }

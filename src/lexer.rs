@@ -1,6 +1,6 @@
 use std::str;
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum Token {
     Ident(String),
     Int(String),

@@ -240,7 +240,7 @@ fn infix_operators_correct_precedence() {
                 right: Box::new(Int(5))
             }),
             operator: InfixOperator::Equals,
-            right: Box::new(Expression::Bool(true))
+            right: Box::new(Bool(true))
         }),
 
         TestCase("(5 + 6) * 2", InfixExpression {
@@ -290,8 +290,8 @@ fn if_expression() {
     let statement = program.statements.first().unwrap();
 
     if let Statement::ExpressionStatement { value } = statement {
-        if let Expression::If { condition, consequence, alternative } = value.as_ref() {
-            assert_eq!(**condition, Expression::InfixExpression {
+        if let If { condition, consequence, alternative } = value.as_ref() {
+            assert_eq!(**condition, InfixExpression {
                 left: Box::new(Ident("x".into())),
                 operator: InfixOperator::LessThan,
                 right: Box::new(Ident("y".into()))
@@ -324,8 +324,8 @@ fn if_else_expression() {
     let statement = program.statements.first().unwrap();
 
     if let Statement::ExpressionStatement { value } = statement {
-        if let Expression::If { condition, consequence, alternative } = value.as_ref() {
-            assert_eq!(**condition, Expression::InfixExpression {
+        if let If { condition, consequence, alternative } = value.as_ref() {
+            assert_eq!(**condition, InfixExpression {
                 left: Box::new(Ident("x".into())),
                 operator: InfixOperator::LessThan,
                 right: Box::new(Ident("y".into()))
@@ -346,6 +346,66 @@ fn if_else_expression() {
             }
         } else {
             panic!("Expression not an If expression");
+        }
+    } else {
+        panic!("Statement not an Expression statement");
+    }
+}
+
+#[test]
+fn function_parameters() {
+    struct TestCase<'a>(&'a str, Vec<String>);
+
+    let inputs = vec![
+        TestCase("fn() {}", vec![]),
+        TestCase("fn(x) {}", vec!["x".into()]),
+        TestCase("fn ( x , y , z ) { } ;", vec!["x".into(), "y".into(), "z".into()])
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let program = parse_then_check_errors_and_length(test_case.0, 1);
+
+        let statement = program.statements.first().unwrap();
+
+        dbg!(&statement);
+
+        if let Statement::ExpressionStatement { value } = statement {
+            if let Expression::Function { parameters, body } = value.as_ref() {
+                assert_eq!(*parameters, test_case.1);
+                assert_eq!(*body, BlockStatement { statements: vec![] });
+            } else {
+                panic!("Expression not a Function expression")
+            }
+        } else {
+            panic!("Statement not an Expression statement");
+        }
+    })
+}
+
+#[test]
+fn function_literal() {
+    use Expression::*;
+
+    let input = "fn(x, y) { x + y; }";
+
+    let program = parse_then_check_errors_and_length(input, 1);
+
+    let statement = program.statements.first().unwrap();
+
+    if let Statement::ExpressionStatement { value } = statement {
+        if let Function { parameters, body } = value.as_ref() {
+            assert_eq!(*parameters, vec!["x".to_string(), "y".to_string()]);
+            assert_eq!(*body, BlockStatement {
+                statements: vec![
+                    Statement::ExpressionStatement { value: Box::new(Expression::InfixExpression {
+                        left: Box::new(Ident("x".into())),
+                        operator: InfixOperator::Plus,
+                        right: Box::new(Ident("y".into()))
+                    })}
+                ]
+             });
+        } else {
+            panic!("Expression not a Function expression");
         }
     } else {
         panic!("Statement not an Expression statement");

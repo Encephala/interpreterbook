@@ -29,6 +29,19 @@ enum Expression {
     PrefixExpression { operator: PrefixOperator, right: Box<Expression> },
     InfixExpression { left: Box<Expression>, operator: InfixOperator, right: Box<Expression> },
     If { condition: Box<Expression>, consequence: Option<BlockStatement>, alternative: Option<BlockStatement> },
+    Function {
+        parameters: Vec<String>,
+        body: BlockStatement
+    },
+}
+
+impl From<&Token> for String {
+    fn from(value: &Token) -> Self {
+        match value {
+            Token::Ident(name) => name.clone(),
+            _ => panic!("I keep doing something stupid")
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -133,6 +146,7 @@ impl<'a> Parser<'a> {
         self.next_token = self.lexer.next_token();
     }
 
+    /// Checks if *current* token matches and if so, skips it, else, return an error
     fn check_and_skip(&mut self, token: &Token) -> Result<(), String> {
         if &self.token != token {
             return Err(
@@ -152,6 +166,9 @@ impl<'a> Parser<'a> {
     }
 
     fn consume_until_statement_end(&mut self) {
+        // TODO: This doesn't ignore semicolons in inner block statements
+        // Should keep a running counter of how many block deeps we are and only check Semicolon
+        // if
         while self.token != Token::Semicolon && self.token != Token::Eof {
             self.next_token();
         }
@@ -277,6 +294,7 @@ impl<'a> Parser<'a> {
             Minus => self.parse_prefix_expression(),
             LParen => self.parse_grouped_expression(),
             If => self.parse_if_expression(),
+            Function => self.parse_function_literal(),
             _ => Err(format!("No prefix parser found for {:?}", self.token))
         };
 
@@ -381,6 +399,46 @@ impl<'a> Parser<'a> {
             result.statements.push(statement);
         }
 
+
+        return Ok(result);
+    }
+
+    fn parse_function_literal(&mut self) -> Result<Box<Expression>, String> {
+        self.next_token();
+
+        self.check_and_skip(&Token::LParen)?;
+
+        let parameters = self.parse_function_parameters()?;
+
+        self.check_and_skip(&Token::RParen)?;
+
+        self.check_and_skip(&Token::LBrace)?;
+
+        let body = self.parse_block_statement()?;
+
+        self.check_and_skip(&Token::RBrace)?;
+
+        return Ok(Box::new(Expression::Function { parameters, body }));
+    }
+
+    fn parse_function_parameters(&mut self) -> Result<Vec<String>, String> {
+        if self.token == Token::RParen {
+            return Ok(vec![]);
+        }
+
+        let mut result = vec![];
+
+        result.push((&self.token).into());
+
+        self.next_token();
+
+        while self.token == Token::Comma {
+            self.next_token();
+
+            result.push((&self.token).into());
+
+            self.next_token();
+        }
 
         return Ok(result);
     }

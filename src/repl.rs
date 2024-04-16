@@ -1,6 +1,25 @@
 use std::io::{stdin, stdout, Write};
 
-use super::lexer::Lexer;
+use super::lexer::{Lexer, Token};
+
+impl<'a> Lexer<'a> {
+    #[allow(dead_code)]
+    pub fn collect_input_to_tokens(&mut self) -> Vec<Token> {
+        let mut tokens = vec![];
+
+        loop {
+            let token = self.next_token();
+
+            tokens.push(token);
+
+            if tokens.last().unwrap() == &Token::Eof {
+                break;
+            }
+        }
+
+        return tokens
+    }
+}
 
 pub fn start() {
     let stdin = stdin();

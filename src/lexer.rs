@@ -160,22 +160,6 @@ impl<'a> Lexer<'a> {
 
         return token;
     }
-
-    pub fn collect_input_to_tokens(&mut self) -> Vec<Token> {
-        let mut tokens = vec![];
-
-        loop {
-            let token = self.next_token();
-
-            tokens.push(token);
-
-            if tokens.last().unwrap() == &Eof {
-                break;
-            }
-        }
-
-        return tokens
-    }
 }
 
 #[cfg(test)]

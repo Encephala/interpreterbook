@@ -49,6 +49,6 @@ pub fn start() {
             println!("Error(s) while parsing: {:?}", program.errors);
         }
 
-        println!("Parsed: {:?}", program.statements);
+        println!("Parsed: {:#?}", program.statements);
     }
 }

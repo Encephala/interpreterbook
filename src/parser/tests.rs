@@ -22,6 +22,14 @@ fn check_parse_errors(program: &Program) {
     }
 }
 
+fn check_and_destruct_expression_statement(statement: &Statement) -> &Expression {
+    if let Statement::ExpressionStatement { value } = statement {
+        return value.as_ref();
+    } else {
+        panic!("Statement not an Expression statement {:?}", statement);
+    }
+}
+
 #[test]
 fn parse_let_statements_literal_value() {
     let input = "let x = 5;
@@ -88,13 +96,9 @@ fn identifier_expression() {
 
     let program = parse_then_check_errors_and_length(input, 1);
 
-    let statement = program.statements.first().unwrap();
+    let statement = program.first_statement();
 
-    if let Statement::ExpressionStatement { value } = statement {
-        assert_eq!(**value, Expression::Ident("foobar".into()));
-    } else {
-        panic!("Testing statement {:?} that isn't an Expression statement", statement);
-    }
+    let value = check_and_destruct_expression_statement(statement);
 }
 
 #[test]
@@ -103,15 +107,11 @@ fn integer_expression() {
 
     let program = parse_then_check_errors_and_length(input, 1);
 
-    let statement = program.statements.first().unwrap();
+    let statement = program.first_statement();
 
-    dbg!(&statement);
+    let value = check_and_destruct_expression_statement(statement);
 
-    if let Statement::ExpressionStatement { value } = statement {
-        assert_eq!(**value, Expression::Int(5));
-    } else {
-        panic!("Testing statement {:?} that isn't an Expression statement", statement);
-    }
+    assert_eq!(*value, Expression::Int(5));
 }
 
 #[test]
@@ -130,17 +130,15 @@ fn prefix_operators() {
     inputs.iter().for_each(|test_case| {
         let program = parse_then_check_errors_and_length(test_case.0, 1);
 
-        let statement = program.statements.first().unwrap();
+        let statement = program.first_statement();
 
-        if let Statement::ExpressionStatement { value } = statement {
-            if let Expression::PrefixExpression { operator, right } = value.as_ref() {
-                assert_eq!(operator, &test_case.1);
-                assert_eq!(**right, test_case.2);
-            } else {
-                panic!("Testing expression {:?} that isn't a Prefix expression", value);
-            }
+        let value = check_and_destruct_expression_statement(statement);
+
+        if let Expression::PrefixExpression { operator, right } = value {
+            assert_eq!(*operator, test_case.1);
+            assert_eq!(**right, test_case.2);
         } else {
-            panic!("Testing statement {:?} that isn't an Expression statement", statement);
+            panic!("Testing expression {:?} that isn't a Prefix expression", value);
         }
     })
 }
@@ -163,22 +161,16 @@ fn infix_operators_integer_literals() {
     inputs.iter().for_each(|test_case| {
         let program = parse_then_check_errors_and_length(test_case.0, 1);
 
-        let statement = program.statements.first().unwrap();
+        let statement = program.first_statement();
 
-        if let Statement::ExpressionStatement { value } = statement {
-            if let Expression::InfixExpression {
-                left,
-                operator,
-                right
-            } = value.as_ref() {
-                assert_eq!(left, &test_case.1);
-                assert_eq!(operator, &test_case.2);
-                assert_eq!(right, &test_case.3);
-            } else {
-                panic!("Testing expression {:?} that isn't an Infix expression", value);
-            }
+        let value = check_and_destruct_expression_statement(statement);
+
+        if let Expression::InfixExpression { left, operator, right } = value {
+            assert_eq!(left, &test_case.1);
+            assert_eq!(operator, &test_case.2);
+            assert_eq!(right, &test_case.3);
         } else {
-            panic!("Testing statement {:?} that isn't an Expression statement", statement)
+            panic!("Testing expression {:?} that isn't an Infix expression", value);
         }
     })
 }
@@ -255,13 +247,11 @@ fn infix_operators_correct_precedence() {
     ].iter().for_each(|test_case| {
         let program = parse_then_check_errors_and_length(test_case.0, 1);
 
-        let statement = program.statements.first().unwrap();
+        let statement = program.first_statement();
 
-        if let Statement::ExpressionStatement { value } = statement {
-            assert_eq!(**value, test_case.1);
-        } else {
-            panic!("Testing statement {:?} that isn't an Expression statement", statement);
-        }
+        let value = check_and_destruct_expression_statement(statement);
+
+        assert_eq!(*value, test_case.1);
     });
 }
 
@@ -287,29 +277,27 @@ fn if_expression() {
 
     let program = parse_then_check_errors_and_length(input, 1);
 
-    let statement = program.statements.first().unwrap();
+    let statement = program.first_statement();
 
-    if let Statement::ExpressionStatement { value } = statement {
-        if let If { condition, consequence, alternative } = value.as_ref() {
-            assert_eq!(**condition, InfixExpression {
-                left: Box::new(Ident("x".into())),
-                operator: InfixOperator::LessThan,
-                right: Box::new(Ident("y".into()))
-            });
+    let value = check_and_destruct_expression_statement(statement);
 
-            if let Some(BlockStatement { statements }) = consequence {
-                assert_eq!(statements.len(), 1);
-                assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Box::new(Ident("x".into())) });
-            } else {
-                panic!("Consequence not a BlockStatement");
-            }
+    if let If { condition, consequence, alternative } = value {
+        assert_eq!(**condition, InfixExpression {
+            left: Box::new(Ident("x".into())),
+            operator: InfixOperator::LessThan,
+            right: Box::new(Ident("y".into()))
+        });
 
-            assert_eq!(*alternative, None);
+        if let Some(BlockStatement { statements }) = consequence {
+            assert_eq!(statements.len(), 1);
+            assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Box::new(Ident("x".into())) });
         } else {
-            panic!("Expression not an If expression");
+            panic!("Consequence not a BlockStatement");
         }
+
+        assert_eq!(*alternative, None);
     } else {
-        panic!("Statement not an Expression statement");
+        panic!("Expression not an If expression");
     }
 }
 
@@ -321,34 +309,32 @@ fn if_else_expression() {
 
     let program = parse_then_check_errors_and_length(input, 1);
 
-    let statement = program.statements.first().unwrap();
+    let statement = program.first_statement();
 
-    if let Statement::ExpressionStatement { value } = statement {
-        if let If { condition, consequence, alternative } = value.as_ref() {
-            assert_eq!(**condition, InfixExpression {
-                left: Box::new(Ident("x".into())),
-                operator: InfixOperator::LessThan,
-                right: Box::new(Ident("y".into()))
-            });
+    let value = check_and_destruct_expression_statement(statement);
 
-            if let Some(BlockStatement { statements }) = consequence {
-                assert_eq!(statements.len(), 1);
-                assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Box::new(Ident("x".into())) });
-            } else {
-                panic!("Consequence not a BlockStatement");
-            }
+    if let If { condition, consequence, alternative } = value {
+        assert_eq!(**condition, InfixExpression {
+            left: Box::new(Ident("x".into())),
+            operator: InfixOperator::LessThan,
+            right: Box::new(Ident("y".into()))
+        });
 
-            if let Some(BlockStatement { statements }) = alternative {
-                assert_eq!(statements.len(), 1);
-                assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Box::new(Ident("y".into())) });
-            } else {
-                panic!("Alternative not a BlockStatement");
-            }
+        if let Some(BlockStatement { statements }) = consequence {
+            assert_eq!(statements.len(), 1);
+            assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Box::new(Ident("x".into())) });
         } else {
-            panic!("Expression not an If expression");
+            panic!("Consequence not a BlockStatement");
+        }
+
+        if let Some(BlockStatement { statements }) = alternative {
+            assert_eq!(statements.len(), 1);
+            assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Box::new(Ident("y".into())) });
+        } else {
+            panic!("Alternative not a BlockStatement");
         }
     } else {
-        panic!("Statement not an Expression statement");
+        panic!("Expression not an If expression");
     }
 }
 
@@ -365,19 +351,15 @@ fn function_parameters() {
     inputs.iter().for_each(|test_case| {
         let program = parse_then_check_errors_and_length(test_case.0, 1);
 
-        let statement = program.statements.first().unwrap();
+        let statement = program.first_statement();
 
-        dbg!(&statement);
+        let value = check_and_destruct_expression_statement(statement);
 
-        if let Statement::ExpressionStatement { value } = statement {
-            if let Expression::Function { parameters, body } = value.as_ref() {
-                assert_eq!(*parameters, test_case.1);
-                assert_eq!(*body, BlockStatement { statements: vec![] });
-            } else {
-                panic!("Expression not a Function expression")
-            }
+        if let Expression::Function { parameters, body } = value {
+            assert_eq!(*parameters, test_case.1);
+            assert_eq!(*body, BlockStatement { statements: vec![] });
         } else {
-            panic!("Statement not an Expression statement");
+            panic!("Expression not a Function expression")
         }
     })
 }
@@ -390,24 +372,23 @@ fn function_literal() {
 
     let program = parse_then_check_errors_and_length(input, 1);
 
-    let statement = program.statements.first().unwrap();
+    let statement = program.first_statement();
 
-    if let Statement::ExpressionStatement { value } = statement {
-        if let Function { parameters, body } = value.as_ref() {
-            assert_eq!(*parameters, vec!["x".to_string(), "y".to_string()]);
-            assert_eq!(*body, BlockStatement {
-                statements: vec![
-                    Statement::ExpressionStatement { value: Box::new(Expression::InfixExpression {
-                        left: Box::new(Ident("x".into())),
-                        operator: InfixOperator::Plus,
-                        right: Box::new(Ident("y".into()))
-                    })}
-                ]
-             });
-        } else {
-            panic!("Expression not a Function expression");
-        }
+    let value = check_and_destruct_expression_statement(statement);
+
+    if let Function { parameters, body } = value {
+        assert_eq!(*parameters, vec!["x".to_string(), "y".to_string()]);
+        assert_eq!(*body, BlockStatement {
+            statements: vec![
+                Statement::ExpressionStatement { value: Box::new(Expression::InfixExpression {
+                    left: Box::new(Ident("x".into())),
+                    operator: InfixOperator::Plus,
+                    right: Box::new(Ident("y".into()))
+                })}
+            ]
+            });
     } else {
-        panic!("Statement not an Expression statement");
+        panic!("Expression not a Function expression");
     }
+}
 }

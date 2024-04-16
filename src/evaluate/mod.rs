@@ -22,6 +22,22 @@ impl Object {
             Object::Null => format!("NULL"),
         }
     }
+
+
+    fn as_truthy(&self) -> Result<Object, String> {
+        match &self {
+            Int(value) => Ok(Bool(*value != 0)),
+            Bool(value) => Ok(Bool(*value)),
+            _ => Err(format!("{:?} is not booleanish", self))
+        }
+    }
+
+    fn as_number(&self) -> Result<Object, String> {
+        match &self {
+            Int(value) => Ok(Int(*value)),
+            _ => Err(format!("{:?} can't be cast to integer", self))
+        }
+    }
 }
 
 impl std::fmt::Display for Object {
@@ -58,15 +74,20 @@ fn evaluate_return_statement(value: &Expression) -> Result<Object, String> {
 
 impl AstNode for Program {
     fn eval(&self) -> Result<Object, String> {
-        if self.statements.is_empty() {
-            return Err("No statements to execute".into());
-        }
-
-        return self.statements
-            .iter()
-            .map(|statement| statement.eval())
-            .last().unwrap();
+        return eval_statements(&self.statements);
     }
+}
+
+fn eval_statements(statements: &Vec<Statement>) -> Result<Object, String> {
+    if statements.is_empty() {
+        return Ok(Object::Null);
+    }
+
+    for statement in statements.iter().rev().skip(1).rev() {
+        statement.eval()?;
+    }
+
+    return statements.last().unwrap().eval();
 }
 
 impl AstNode for Expression {
@@ -86,9 +107,7 @@ impl AstNode for Expression {
 
 impl AstNode for BlockStatement {
     fn eval(&self) -> Result<Object, String> {
-        self.statements.iter().for_each(|statement| { statement.eval(); } );
-
-        todo!();
+        return eval_statements(&self.statements);
     }
 }
 
@@ -102,18 +121,21 @@ fn evaluate_prefix_expression(operator: &PrefixOperator, right: &Expression) -> 
 }
 
 fn evaluate_prefix_bang(right: Object) -> Result<Object, String> {
-    match right {
-        Bool(value) => Ok(Bool(!value)),
-        Int(value) => Ok(Bool(value == 0)),
-        _ => Err(format!("{:?} is not booleanish", right)),
+    if let Bool(value) = right.as_truthy()? {
+        return Ok(Bool(!value));
     }
+
+    // The above will always match, because as_truthy returns Object::Bool
+    panic!("Can I stop being stupid");
 }
 
 fn evaluate_prefix_minus(right: Object) -> Result<Object, String> {
-    match right {
-        Int(value) => Ok(Int(-value)),
-        _ => Err(format!("{:?} can't be negated", right)),
+    if let Int(value) = right.as_number()? {
+        return Ok(Int(-value));
     }
+
+    // The above will always match, because as_integer returns Object::Int
+    panic!("Can I stop being stupid");
 }
 
 fn evaluate_infix_expression(left: &Expression, operator: &InfixOperator, right: &Expression) -> Result<Object, String> {
@@ -162,7 +184,7 @@ fn evaluate_infix_boolean(left: bool, operator: &InfixOperator, right: bool) -> 
 }
 
 fn evaluate_conditional_expression(condition: &Expression, consequence: &BlockStatement, alternative: &Option<BlockStatement>) -> Result<Object, String> {
-    if let Bool(value) = condition.eval()? {
+    if let Bool(value) = condition.eval()?.as_truthy()? {
         if value {
             return consequence.eval();
         }
@@ -171,7 +193,7 @@ fn evaluate_conditional_expression(condition: &Expression, consequence: &BlockSt
             return alternative.eval();
         }
 
-        return Err(format!("Condition {:?} evaluated to false but if statement had no alternative", condition));
+        return Ok(Object::Null);
     }
 
     return Err(format!("Condition {:?} didn't evaluate to a Boolean object", condition));

@@ -104,5 +104,21 @@ fn infix_operator_integer_error_for_incompatible_types() {
 
 #[test]
 fn conditional_expression() {
+    use Object::*;
 
+    struct TestCase<'a>(&'a str, Object);
+
+    let inputs = [
+        TestCase("if (true) { 10 }", Int(10)),
+        TestCase("if (1) { 10 }", Int(10)),
+        TestCase("if (1 > 2) { 10 } else { 20 }", Int(20)),
+        TestCase("if (0) { 1 } else { 2 }", Int(2)),
+        TestCase("if (0) { 10 }", Null),
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0).unwrap();
+
+        assert_eq!(result, test_case.1);
+    })
 }

@@ -28,6 +28,7 @@ pub fn start() {
 
         if !program.errors.is_empty() {
             println!("Error(s) while parsing: {:?}", program.errors);
+            continue;
         }
 
         println!("{:?}", program.eval());

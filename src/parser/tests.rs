@@ -325,7 +325,7 @@ fn if_expression() {
             right: Box::new(Ident("y".into()))
         });
 
-        if let Some(BlockStatement { statements }) = consequence {
+        if let BlockStatement { statements } = consequence {
             assert_eq!(statements.len(), 1);
             assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Box::new(Ident("x".into())) });
         } else {
@@ -357,12 +357,10 @@ fn if_else_expression() {
             right: Box::new(Ident("y".into()))
         });
 
-        if let Some(BlockStatement { statements }) = consequence {
-            assert_eq!(statements.len(), 1);
-            assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Box::new(Ident("x".into())) });
-        } else {
-            panic!("Consequence not a BlockStatement");
-        }
+        let BlockStatement { statements } = consequence;
+
+        assert_eq!(statements.len(), 1);
+        assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Box::new(Ident("x".into())) });
 
         if let Some(BlockStatement { statements }) = alternative {
             assert_eq!(statements.len(), 1);

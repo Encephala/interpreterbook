@@ -1,3 +1,5 @@
+use crate::parser::BlockStatement;
+
 use super::parser::{Statement, Expression, Program, PrefixOperator, InfixOperator};
 
 #[cfg(test)]
@@ -7,6 +9,7 @@ mod tests;
 pub enum Object {
     Int(isize),
     Bool(bool),
+    Null,
 }
 
 use Object::*;
@@ -16,6 +19,7 @@ impl Object {
         match &self {
             Object::Int(value) => format!("{value}"),
             Object::Bool(value) => format!("{value}"),
+            Object::Null => format!("NULL"),
         }
     }
 }
@@ -25,6 +29,7 @@ impl std::fmt::Display for Object {
         match &self {
             Int(value) => write!(f, "{}", value),
             Bool(value) => write!(f, "{}", value),
+            Null => f.write_str("NULL"),
         }
     }
 }
@@ -72,10 +77,18 @@ impl AstNode for Expression {
             Expression::Bool(value) => Ok(Bool(*value)),
             Expression::PrefixExpression { operator, right } => evaluate_prefix_expression(operator, right.as_ref()),
             Expression::InfixExpression { left, operator, right } => evaluate_infix_expression(left.as_ref(), operator, right.as_ref()),
-            Expression::If { condition, consequence, alternative } => todo!(),
+            Expression::If { condition, consequence, alternative } => evaluate_conditional_expression(condition, consequence, alternative),
             Expression::Function { parameters, body } => todo!(),
             Expression::CallExpression { function, arguments } => todo!(),
         }
+    }
+}
+
+impl AstNode for BlockStatement {
+    fn eval(&self) -> Result<Object, String> {
+        self.statements.iter().for_each(|statement| { statement.eval(); } );
+
+        todo!();
     }
 }
 
@@ -146,4 +159,20 @@ fn evaluate_infix_boolean(left: bool, operator: &InfixOperator, right: bool) -> 
         InfixOperator::NotEquals => Ok(Bool(left != right)),
         InfixOperator::Divide => Err(format!("Can't apply boolean {:?} to {:?} and {:?}", operator, left, right))
     }
+}
+
+fn evaluate_conditional_expression(condition: &Expression, consequence: &BlockStatement, alternative: &Option<BlockStatement>) -> Result<Object, String> {
+    if let Bool(value) = condition.eval()? {
+        if value {
+            return consequence.eval();
+        }
+
+        if let Some(alternative) = alternative {
+            return alternative.eval();
+        }
+
+        return Err(format!("Condition {:?} evaluated to false but if statement had no alternative", condition));
+    }
+
+    return Err(format!("Condition {:?} didn't evaluate to a Boolean object", condition));
 }

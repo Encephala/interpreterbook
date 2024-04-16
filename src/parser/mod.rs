@@ -28,7 +28,7 @@ pub enum Expression {
     Bool(bool),
     PrefixExpression { operator: PrefixOperator, right: Box<Expression> },
     InfixExpression { left: Box<Expression>, operator: InfixOperator, right: Box<Expression> },
-    If { condition: Box<Expression>, consequence: Option<BlockStatement>, alternative: Option<BlockStatement> },
+    If { condition: Box<Expression>, consequence: BlockStatement, alternative: Option<BlockStatement> },
     Function { parameters: Vec<String>, body: BlockStatement },
     CallExpression {
         function: Box<Expression>, // Always either Ident or Function
@@ -104,7 +104,7 @@ enum Precedence {
 
 #[derive(Debug, PartialEq)]
 pub struct BlockStatement {
-    statements: Vec<Statement>
+    pub statements: Vec<Statement>
 }
 
 
@@ -374,7 +374,7 @@ impl<'a> Parser<'a> {
 
         self.check_and_skip(&Token::LBrace)?;
 
-        let consequence = Some(self.parse_block_statement()?);
+        let consequence = self.parse_block_statement()?;
 
         self.check_and_skip(&Token::RBrace)?;
 

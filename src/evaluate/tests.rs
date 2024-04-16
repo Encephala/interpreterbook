@@ -101,3 +101,8 @@ fn infix_operator_integer_error_for_incompatible_types() {
         assert!(evaluate(input).is_err());
     });
 }
+
+#[test]
+fn conditional_expression() {
+
+}

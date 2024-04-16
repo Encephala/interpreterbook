@@ -7,7 +7,13 @@ fn evaluate(input: &str) -> Object {
 
     assert!(program.errors.is_empty());
 
-    return program.eval();
+    let result = program.eval();
+
+    if result.is_err() {
+        panic!("Error(s) while evaluating: {:?}", result);
+    }
+
+    return result.unwrap();
 }
 
 #[test]

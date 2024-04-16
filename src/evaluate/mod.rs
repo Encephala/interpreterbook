@@ -3,29 +3,29 @@ use super::parser::{Statement, Expression, Program, PrefixOperator};
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Object {
     Int(isize),
     Bool(bool),
-    Null
 }
+
+use Object::*;
 
 impl Object {
     fn inspect(&self) -> String {
         match &self {
             Object::Int(value) => format!("{value}"),
             Object::Bool(value) => format!("{value}"),
-            Object::Null => "NULL".into(),
         }
     }
 }
 
 pub trait AstNode {
-    fn eval(&self) -> Object;
+    fn eval(&self) -> Result<Object, String>;
 }
 
 impl AstNode for Statement {
-    fn eval(&self) -> Object {
+    fn eval(&self) -> Result<Object, String> {
         match &self {
             Statement::Let { name, value } => evaluate_let_statement(name, value),
             Statement::Return { value } => evaluate_return_statement(value),
@@ -34,18 +34,18 @@ impl AstNode for Statement {
     }
 }
 
-fn evaluate_let_statement(name: &str, value: &Expression) -> Object {
+fn evaluate_let_statement(name: &str, value: &Expression) -> Result<Object, String> {
     todo!();
 }
 
-fn evaluate_return_statement(value: &Expression) -> Object {
+fn evaluate_return_statement(value: &Expression) -> Result<Object, String> {
     todo!();
 }
 
 impl AstNode for Program {
-    fn eval(&self) -> Object {
+    fn eval(&self) -> Result<Object, String> {
         if self.statements.is_empty() {
-            return Object::Null;
+            return Err("No statements to execute".into());
         }
 
         return self.statements
@@ -56,13 +56,11 @@ impl AstNode for Program {
 }
 
 impl AstNode for Expression {
-    fn eval(&self) -> Object {
-        use Object::*;
-
+    fn eval(&self) -> Result<Object, String> {
         match &self{
             Expression::Ident(_) => todo!(),
-            Expression::Int(value) => Int(*value as isize),
-            Expression::Bool(value) => Bool(*value),
+            Expression::Int(value) => Ok(Int(*value as isize)),
+            Expression::Bool(value) => Ok(Bool(*value)),
             Expression::PrefixExpression { operator, right } => evaluate_prefix_expression(operator, right.as_ref()),
             Expression::InfixExpression { left, operator, right } => todo!(),
             Expression::If { condition, consequence, alternative } => todo!(),
@@ -72,22 +70,30 @@ impl AstNode for Expression {
     }
 }
 
-fn evaluate_prefix_expression(operator: &PrefixOperator, right: &Expression) -> Object {
-    let result = right.eval();
+fn evaluate_prefix_expression(operator: &PrefixOperator, right: &Expression) -> Result<Object, String> {
+    let right = right.eval()?;
 
     return match operator {
-        PrefixOperator::Minus => evaluate_prefix_minus(result),
-        PrefixOperator::Bang => evaluate_prefix_bang(result),
+        PrefixOperator::Minus => evaluate_prefix_minus(right),
+        PrefixOperator::Bang => evaluate_prefix_bang(right),
     };
 }
 
-fn evaluate_prefix_bang(right: Object) -> Object {
-    use Object::*;
-
+fn evaluate_prefix_bang(right: Object) -> Result<Object, String> {
     match right {
-        Bool(value) => Bool(!value),
-        Int(value) => Bool(value == 0),
-        Null => Null,
+        Bool(value) => Ok(Bool(!value)),
+        Int(value) => Ok(Bool(value == 0)),
+        _ => Err(format!("{:?} is not booleanish", right)),
+    }
+}
+
+fn evaluate_prefix_minus(right: Object) -> Result<Object, String> {
+    match right {
+        Int(value) => Ok(Int(-value)),
+        _ => Err(format!("{:?} can't be negated", right)),
+    }
+}
+
     }
 }
 

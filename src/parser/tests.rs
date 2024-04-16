@@ -1,5 +1,11 @@
 use super::*;
 
+impl Program {
+    fn first_statement(&self) -> &Statement {
+        return self.statements.first().unwrap();
+    }
+}
+
 fn parse_then_check_errors_and_length(input: &str, expected_length: usize) -> Program {
     let mut parser = Parser::new(input);
 

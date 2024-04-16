@@ -12,11 +12,6 @@ struct Program {
     errors: Vec<String>
 }
 
-impl Program {
-    fn first_statement(&self) -> &Statement {
-        return self.statements.first().unwrap();
-    }
-}
 
 
 #[derive(Debug, PartialEq)]

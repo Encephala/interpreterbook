@@ -115,7 +115,6 @@ fn evaluate_infix(left: &Object, operator: &InfixOperator, right: &Object) -> Re
     return Err(format!("Can't apply {:?} to incompatible types {:?} and {:?}", operator, left, right));
 }
 
-
 fn evaluate_infix_integer(left: isize, operator: &InfixOperator, right: isize) -> Result<Object, String> {
     match operator {
         InfixOperator::Plus => Ok(Int(left + right)),
@@ -136,6 +135,6 @@ fn evaluate_infix_boolean(left: bool, operator: &InfixOperator, right: bool) -> 
         InfixOperator::LessThan => Ok(Bool(!left && right)),
         InfixOperator::Equals => Ok(Bool(left == right)),
         InfixOperator::NotEquals => Ok(Bool(left != right)),
-        _ => Err(format!("Can't apply {:?} to {:?} and {:?}", operator, left, right))
+        _ => Err(format!("Can't apply boolean {:?} to {:?} and {:?}", operator, left, right))
     }
 }

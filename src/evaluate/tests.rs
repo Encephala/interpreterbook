@@ -1,19 +1,13 @@
-use super::super::parser::{Parser, Program};
+use super::super::parser::Parser;
 
-use super::{AstNode, Object, Expression, Statement};
+use super::{AstNode, Object};
 
-fn evaluate(input: &str) -> Object {
+fn evaluate(input: &str) -> Result<Object, String> {
     let program = Parser::new(input).parse_program();
 
     assert!(program.errors.is_empty());
 
-    let result = program.eval();
-
-    if result.is_err() {
-        panic!("Error(s) while evaluating: {:?}", result);
-    }
-
-    return result.unwrap();
+    return program.eval();
 }
 
 #[test]
@@ -31,7 +25,7 @@ fn integer_expression() {
 
     inputs.iter().for_each(|test_case| {
 
-        let result = evaluate(test_case.0);
+        let result = evaluate(test_case.0).unwrap();
 
         if let Object::Int(value) = result {
             assert_eq!(value, test_case.1);
@@ -50,12 +44,12 @@ fn boolean_expressions() {
         TestCase("false", false),
         TestCase("1 < 2", true),
         TestCase("2 != 2", false),
-        TestCase("2 == 3 == false", true),
+        TestCase("2 == 2 == false", true),
     ];
 
     inputs.iter().for_each(|test_case| {
 
-        let result = evaluate(test_case.0);
+        let result = evaluate(test_case.0).unwrap();
 
         if let Object::Bool(value) = result {
             assert_eq!(value, test_case.1);
@@ -77,12 +71,26 @@ fn bang_operator() {
     ];
 
     inputs.iter().for_each(|test_case| {
-        let result = evaluate(test_case.0);
+        let result = evaluate(test_case.0).unwrap();
 
         if let Object::Bool(value) = result {
             assert_eq!(value, test_case.1);
         } else {
             panic!("Evaluation result wasn't a Bool object")
         }
-    })
+    });
+}
+
+#[test]
+fn prefix_operator_minus_error_for_incompatible_types() {
+    ["-true", "-(5 > 3)"].iter().for_each(|input| {
+        assert!(evaluate(input).is_err());
+    });
+}
+
+#[test]
+fn infix_operator_integer_error_for_incompatible_types() {
+    ["5 + true", "true / false"].iter().for_each(|input| {
+        assert!(evaluate(input).is_err());
+    });
 }

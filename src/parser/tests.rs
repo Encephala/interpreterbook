@@ -40,17 +40,24 @@ fn parse_let_statements_literal_value() {
 
     let expected_names = vec!["x", "y", "foobar"];
 
-    program.statements.iter().zip(expected_names).for_each(|(statement, name)| {
-        validate_single_let_statement(statement, name)
-    });
-}
+    let expected_values = vec![
+        Expression::Int(5),
+        Expression::Int(10),
+        Expression::Int(838383),
+    ];
 
-fn validate_single_let_statement(statement: &Statement, expected_name: &str) {
-    if let Statement::Let{ name, value: _value } = statement {
-        assert_eq!(name, expected_name);
-    } else {
-        panic!("Testing statement {:?} that isn't a Let statement", statement);
-    }
+    program.statements.iter()
+        .zip(expected_names)
+        .zip(expected_values)
+        .for_each(|((statement, expected_name), expected_value)| {
+            if let Statement::Let{ name, value } = statement {
+                assert_eq!(name, expected_name);
+
+                assert_eq!(**value, expected_value);
+            } else {
+                panic!("Testing statement {:?} that isn't a Let statement", statement);
+            }
+    });
 }
 
 #[test]
@@ -80,14 +87,21 @@ fn parse_return_literal_value() {
 
     let program = parse_then_check_errors_and_length(input, 3);
 
-    program.statements.iter().for_each(|statement| validate_single_return_statement(statement));
-}
+    let expected_values = vec![
+        Expression::Int(5),
+        Expression::Int(10),
+        Expression::Int(993322),
+    ];
 
-fn validate_single_return_statement(statement: &Statement) {
-    if let Statement::Return { .. } = statement {
-    } else {
-        panic!("Testing statement {:?} that isn't a Return statement", statement);
-    }
+    program.statements.iter()
+        .zip(expected_values)
+        .for_each(|(statement, expected_value)| {
+            if let Statement::Return { value } = statement {
+                assert_eq!(**value, expected_value);
+            } else {
+                panic!("Testing statement {:?} that isn't a Return statement", statement);
+            }
+        });
 }
 
 #[test]
@@ -99,6 +113,8 @@ fn identifier_expression() {
     let statement = program.first_statement();
 
     let value = check_and_destruct_expression_statement(statement);
+
+    assert_eq!(*value, Expression::Ident("foobar".into()));
 }
 
 #[test]

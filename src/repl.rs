@@ -1,6 +1,7 @@
 use std::io::{stdin, stdout, Write};
 
 use super::lexer::{Lexer, Token};
+use super::parser::Parser;
 
 impl<'a> Lexer<'a> {
     #[allow(dead_code)]
@@ -28,13 +29,13 @@ pub fn start() {
     loop {
         print!(">> ");
 
-        let mut input = String::new();
-
         let _ = stdout.flush();
+
+        let mut input = String::new();
 
         let _ = stdin.read_line(&mut input);
 
-        // Exit on "stop", "exit" or CTRL+D
+        // Exit on "exit" or CTRL+D
         if input == "exit\n" {
             break;
         } else if input.is_empty() {
@@ -42,8 +43,12 @@ pub fn start() {
             break;
         }
 
-        let mut lexer = Lexer::new(&input);
+        let program = Parser::new(&input).parse_program();
 
-        println!("{:?}", lexer.collect_input_to_tokens());
+        if !program.errors.is_empty() {
+            println!("Error(s) while parsing: {:?}", program.errors);
+        }
+
+        println!("Parsed: {:?}", program.statements);
     }
 }

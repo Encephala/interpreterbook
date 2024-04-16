@@ -7,15 +7,14 @@ use super::lexer::{Token, Lexer};
 
 
 #[derive(Debug)]
-struct Program {
-    statements: Vec<Statement>,
-    errors: Vec<String>
+pub struct Program {
+    pub statements: Vec<Statement>,
+    pub errors: Vec<String>
 }
 
 
-
 #[derive(Debug, PartialEq)]
-enum Statement {
+pub enum Statement {
     Let { name: String, value: Box<Expression> },
     Return { value: Box<Expression> },
     ExpressionStatement { value: Box<Expression> },
@@ -23,7 +22,7 @@ enum Statement {
 
 
 #[derive(Debug, PartialEq)]
-enum Expression {
+pub enum Expression {
     Ident(String),
     Int(usize),
     Bool(bool),
@@ -47,7 +46,7 @@ impl From<&Token> for String {
 }
 
 #[derive(Debug, PartialEq)]
-enum PrefixOperator {
+pub enum PrefixOperator {
     Minus,
     Bang,
 }
@@ -63,7 +62,7 @@ impl From<&Token> for PrefixOperator {
 }
 
 #[derive(Debug, PartialEq)]
-enum InfixOperator {
+pub enum InfixOperator {
     Plus,
     Minus,
     Multiply,
@@ -104,13 +103,13 @@ enum Precedence {
 
 
 #[derive(Debug, PartialEq)]
-struct BlockStatement {
+pub struct BlockStatement {
     statements: Vec<Statement>
 }
 
 
 #[derive(Debug)]
-struct Parser<'a> {
+pub struct Parser<'a> {
     lexer: Lexer<'a>,
     token: Token,
     next_token: Token,
@@ -180,7 +179,7 @@ impl<'a> Parser<'a> {
         self.next_token();
     }
 
-    fn parse_program(&mut self) -> Program {
+    pub fn parse_program(&mut self) -> Program {
         let mut result = Program { statements: vec![], errors: vec![] };
 
         while self.token != Token::Eof {

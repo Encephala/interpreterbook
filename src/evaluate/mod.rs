@@ -131,10 +131,12 @@ fn evaluate_infix_integer(left: isize, operator: &InfixOperator, right: isize) -
 fn evaluate_infix_boolean(left: bool, operator: &InfixOperator, right: bool) -> Result<Object, String> {
     match operator {
         InfixOperator::Plus => Ok(Bool(left || right)),
+        InfixOperator::Minus => Ok(Bool(left && !right)),
+        InfixOperator::Multiply => Ok(Bool(left && right)),
         InfixOperator::GreaterThan => Ok(Bool(left && !right)),
         InfixOperator::LessThan => Ok(Bool(!left && right)),
         InfixOperator::Equals => Ok(Bool(left == right)),
         InfixOperator::NotEquals => Ok(Bool(left != right)),
-        _ => Err(format!("Can't apply boolean {:?} to {:?} and {:?}", operator, left, right))
+        InfixOperator::Divide => Err(format!("Can't apply boolean {:?} to {:?} and {:?}", operator, left, right))
     }
 }

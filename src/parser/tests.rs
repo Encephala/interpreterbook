@@ -5,18 +5,18 @@ fn parse_then_check_errors_and_length(input: &str, expected_length: usize) -> Pr
 
     let program = parser.parse_program();
 
-    check_parser_errors(&parser, &program);
+    check_parse_errors(&program);
 
     assert_eq!(program.statements.len(), expected_length);
 
     return program;
 }
 
-fn check_parser_errors(parser: &Parser, program: &Program) {
-    if !parser.errors.is_empty() {
+fn check_parse_errors(program: &Program) {
+    if !program.errors.is_empty() {
         panic!("Got {} parsing error(s):\n{:?}\nSucceeded in parsing: {:?}",
-            parser.errors.len(),
-            parser.errors,
+            program.errors.len(),
+            program.errors,
             program.statements
         );
     }
@@ -53,11 +53,11 @@ fn parse_let_yields_correct_errors() {
 
     let mut parser = Parser::new(input);
 
-    let _ = parser.parse_program();
+    let program = parser.parse_program();
 
-    assert_eq!(parser.errors.len(), 3);
+    assert_eq!(program.errors.len(), 3);
 
-    assert_eq!(parser.errors, vec![
+    assert_eq!(program.errors, vec![
         "Failed to parse statement: Expected token Assign, found Int(\"5\")",
         "Failed to parse statement: Token in let Assign not an identifier",
         "Failed to parse statement: Token in let Int(\"838383\") not an identifier"

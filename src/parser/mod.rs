@@ -6,8 +6,10 @@ use std::collections::HashMap;
 use super::lexer::{Token, Lexer};
 
 
+#[derive(Debug)]
 struct Program {
-    statements: Vec<Statement>
+    statements: Vec<Statement>,
+    errors: Vec<String>
 }
 
 
@@ -90,7 +92,6 @@ struct Parser<'a> {
     lexer: Lexer<'a>,
     token: Token,
     next_token: Token,
-    errors: Vec<String>,
     precedence_map: HashMap<&'a Token, &'a Precedence>
 }
 
@@ -114,7 +115,7 @@ impl<'a> Parser<'a> {
             (Token::Asterisk, Precedence::Product),
         ].iter().for_each(|(token, precedence)| { precedence_map.insert(token, precedence); });
 
-        return Self { lexer, token: first_token, next_token: second_token, errors: vec![], precedence_map };
+        return Self { lexer, token: first_token, next_token: second_token, precedence_map };
     }
 
     fn next_token(&mut self) {
@@ -153,7 +154,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_program(&mut self) -> Program {
-        let mut result = Program { statements: vec![] };
+        let mut result = Program { statements: vec![], errors: vec![] };
 
         while self.token != Token::Eof {
             let statement = self.parse_statement();
@@ -161,7 +162,7 @@ impl<'a> Parser<'a> {
             match statement {
                 Ok(statement) => result.statements.push(statement),
                 Err(message) => {
-                    self.errors.push(format!("Failed to parse statement: {message}"));
+                    result.errors.push(format!("Failed to parse statement: {message}"));
 
                     // Ignore remainder of statement
                     // Idk if this is good behaviour

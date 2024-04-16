@@ -12,7 +12,7 @@ fn evaluate(input: &str) -> Object {
 
 #[test]
 fn integer_expression() {
-    struct TestCase<'a>(&'a str, usize);
+    struct TestCase<'a>(&'a str, isize);
 
     let inputs = [
         TestCase("5", 5),
@@ -51,6 +51,28 @@ fn boolean_expressions() {
             assert_eq!(value, test_case.1);
         } else {
             panic!("Evaluation result wasn't an Bool object");
+        }
+    })
+}
+
+#[test]
+fn bang_operator() {
+    struct TestCase<'a>(&'a str, bool);
+
+    let inputs = [
+        TestCase("!true", false),
+        TestCase("!5", false),
+        TestCase("!!true", true),
+        TestCase("!!5", true)
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0);
+
+        if let Object::Bool(value) = result {
+            assert_eq!(value, test_case.1);
+        } else {
+            panic!("Evaluation result wasn't a Bool object")
         }
     })
 }

@@ -1,13 +1,13 @@
-use super::parser::{Statement, Expression, Program};
+use super::parser::{Statement, Expression, Program, PrefixOperator};
 
 #[cfg(test)]
 mod tests;
 
 #[derive(Debug)]
 pub enum Object {
-    Int(usize),
+    Int(isize),
     Bool(bool),
-    None
+    Null
 }
 
 impl Object {
@@ -15,7 +15,7 @@ impl Object {
         match &self {
             Object::Int(value) => format!("{value}"),
             Object::Bool(value) => format!("{value}"),
-            Object::None => "NULL".into(),
+            Object::Null => "NULL".into(),
         }
     }
 }
@@ -45,7 +45,7 @@ fn evaluate_return_statement(value: &Expression) -> Object {
 impl AstNode for Program {
     fn eval(&self) -> Object {
         if self.statements.is_empty() {
-            return Object::None;
+            return Object::Null;
         }
 
         return self.statements
@@ -61,13 +61,32 @@ impl AstNode for Expression {
 
         match &self{
             Expression::Ident(_) => todo!(),
-            Expression::Int(value) => Int(*value),
+            Expression::Int(value) => Int(*value as isize),
             Expression::Bool(value) => Bool(*value),
-            Expression::PrefixExpression { operator, right } => todo!(),
+            Expression::PrefixExpression { operator, right } => evaluate_prefix_expression(operator, right.as_ref()),
             Expression::InfixExpression { left, operator, right } => todo!(),
             Expression::If { condition, consequence, alternative } => todo!(),
             Expression::Function { parameters, body } => todo!(),
             Expression::CallExpression { function, arguments } => todo!(),
         }
+    }
+}
+
+fn evaluate_prefix_expression(operator: &PrefixOperator, right: &Expression) -> Object {
+    let result = right.eval();
+
+    return match operator {
+        PrefixOperator::Minus => todo!(),
+        PrefixOperator::Bang => evaluate_prefix_bang(result),
+    };
+}
+
+fn evaluate_prefix_bang(right: Object) -> Object {
+    use Object::*;
+
+    match right {
+        Bool(value) => Bool(!value),
+        Int(value) => Bool(value == 0),
+        Null => Null,
     }
 }

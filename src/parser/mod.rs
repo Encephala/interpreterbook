@@ -402,7 +402,6 @@ impl<'a> Parser<'a> {
             result.statements.push(statement);
         }
 
-
         return Ok(result);
     }
 
@@ -451,7 +450,9 @@ impl<'a> Parser<'a> {
 
         let arguments = self.parse_call_arguments()?;
 
-        self.check_and_skip(&Token::RParen)?;
+        if self.token != Token::RParen {
+            return Err(format!("Expected token {:?}, found {:?}", Token::RParen, self.token));
+        }
 
         return Ok(Box::new(Expression::CallExpression { function: left, arguments }))
     }

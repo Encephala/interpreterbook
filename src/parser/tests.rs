@@ -233,17 +233,21 @@ fn infix_operators_correct_precedence() {
             })
         }),
 
-        TestCase("add(a + b * c)", CallExpression {
-            function: Box::new(Expression::Ident("add".into())),
-            arguments: vec![InfixExpression {
-                left: Box::new(Ident("a".into())),
-                operator: InfixOperator::Plus,
-                right: Box::new(InfixExpression {
-                    left: Box::new(Ident("b".into())),
-                    operator: InfixOperator::Multiply,
-                    right: Box::new(Ident("c".into()))
-                })
-            }]
+        TestCase("add(a + b * c) + d", InfixExpression {
+            left: Box::new(CallExpression {
+                function: Box::new(Expression::Ident("add".into())),
+                arguments: vec![InfixExpression {
+                    left: Box::new(Ident("a".into())),
+                    operator: InfixOperator::Plus,
+                    right: Box::new(InfixExpression {
+                        left: Box::new(Ident("b".into())),
+                        operator: InfixOperator::Multiply,
+                        right: Box::new(Ident("c".into()))
+                    })
+                }]
+            }),
+            operator: InfixOperator::Plus,
+            right: Box::new(Ident("d".into()))
         }),
 
         TestCase("5 < 4 != 3 > 4", InfixExpression {

@@ -44,7 +44,7 @@ fn boolean_expressions() {
         TestCase("false", false),
         TestCase("1 < 2", true),
         TestCase("2 != 2", false),
-        TestCase("2 == 2 == false", true),
+        TestCase("2 == 3 == false", true),
     ];
 
     inputs.iter().for_each(|test_case| {
@@ -83,14 +83,21 @@ fn bang_operator() {
 
 #[test]
 fn prefix_operator_minus_error_for_incompatible_types() {
-    ["-true", "-(5 > 3)"].iter().for_each(|input| {
+    [
+        "-true",
+        "-(5 > 3)"
+    ].iter().for_each(|input| {
         assert!(evaluate(input).is_err());
     });
 }
 
 #[test]
 fn infix_operator_integer_error_for_incompatible_types() {
-    ["5 + true", "true / false"].iter().for_each(|input| {
+    [
+        "5 + true",
+        "true / false",
+        "true < 10"
+    ].iter().for_each(|input| {
         assert!(evaluate(input).is_err());
     });
 }

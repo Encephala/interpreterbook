@@ -1,26 +1,7 @@
 use std::io::{stdin, stdout, Write};
 
-use super::lexer::{Lexer, Token};
 use super::parser::Parser;
-
-impl<'a> Lexer<'a> {
-    #[allow(dead_code)]
-    pub fn collect_input_to_tokens(&mut self) -> Vec<Token> {
-        let mut tokens = vec![];
-
-        loop {
-            let token = self.next_token();
-
-            tokens.push(token);
-
-            if tokens.last().unwrap() == &Token::Eof {
-                break;
-            }
-        }
-
-        return tokens
-    }
-}
+use super::evaluate::AstNode;
 
 pub fn start() {
     let stdin = stdin();
@@ -49,6 +30,6 @@ pub fn start() {
             println!("Error(s) while parsing: {:?}", program.errors);
         }
 
-        println!("Parsed: {:#?}", program.statements);
+        println!("{:?}", program.eval());
     }
 }

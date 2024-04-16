@@ -24,7 +24,9 @@ fn integer_expression() {
         TestCase("5", 5),
         TestCase("10", 10),
         TestCase("-5", -5),
-        TestCase("--10", 10)
+        TestCase("--10", 10),
+        TestCase("1 * 2 + 3 + 4", 9),
+        TestCase("2 * (5 + 10)", 30),
     ];
 
     inputs.iter().for_each(|test_case| {

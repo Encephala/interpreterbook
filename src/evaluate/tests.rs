@@ -17,6 +17,8 @@ fn integer_expression() {
     let inputs = [
         TestCase("5", 5),
         TestCase("10", 10),
+        TestCase("-5", -5),
+        TestCase("--10", 10)
     ];
 
     inputs.iter().for_each(|test_case| {

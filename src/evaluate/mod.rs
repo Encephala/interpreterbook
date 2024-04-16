@@ -76,7 +76,7 @@ fn evaluate_prefix_expression(operator: &PrefixOperator, right: &Expression) -> 
     let result = right.eval();
 
     return match operator {
-        PrefixOperator::Minus => todo!(),
+        PrefixOperator::Minus => evaluate_prefix_minus(result),
         PrefixOperator::Bang => evaluate_prefix_bang(result),
     };
 }
@@ -88,5 +88,14 @@ fn evaluate_prefix_bang(right: Object) -> Object {
         Bool(value) => Bool(!value),
         Int(value) => Bool(value == 0),
         Null => Null,
+    }
+}
+
+fn evaluate_prefix_minus(right: Object) -> Object {
+    use Object::*;
+
+    match right {
+        Int(value) => Int(-value),
+        _ => Null,
     }
 }

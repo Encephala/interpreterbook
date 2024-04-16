@@ -304,21 +304,6 @@ impl<'a> Parser<'a> {
         return result;
     }
 
-    fn can_parse_infix(&mut self) -> bool {
-        use Token::*;
-
-        return [
-            Plus,
-            Minus,
-            Slash,
-            Asterisk,
-            Equals,
-            NotEquals,
-            LessThan,
-            GreaterThan,
-        ].contains(&self.token);
-    }
-
     fn parse_infix_expression(&mut self, left: Box<Expression>) -> Result<Box<Expression>, String>  {
         let precedence = self.current_precedence().clone(); // Clone precedence to drop reference to self
 

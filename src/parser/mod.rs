@@ -28,6 +28,7 @@ enum Expression {
     Bool(bool),
     PrefixExpression { operator: PrefixOperator, right: Box<Expression> },
     InfixExpression { left: Box<Expression>, operator: InfixOperator, right: Box<Expression> },
+    If { condition: Box<Expression>, consequence: Option<BlockStatement>, alternative: Option<BlockStatement> },
 }
 
 #[derive(Debug, PartialEq)]
@@ -84,6 +85,12 @@ enum Precedence {
     Product,
     Prefix,
     Call
+}
+
+
+#[derive(Debug, PartialEq)]
+struct BlockStatement {
+    statements: Vec<Statement>
 }
 
 
@@ -269,6 +276,7 @@ impl<'a> Parser<'a> {
             Bang => self.parse_prefix_expression(),
             Minus => self.parse_prefix_expression(),
             LParen => self.parse_grouped_expression(),
+            If => self.parse_if_expression(),
             _ => Err(format!("No prefix parser found for {:?}", self.token))
         };
 
@@ -330,5 +338,50 @@ impl<'a> Parser<'a> {
         }
 
         return result;
+    }
+
+    fn parse_if_expression(&mut self) -> Result<Box<Expression>, String> {
+        self.next_token();
+
+        self.check_and_skip(&Token::LParen)?;
+
+        let condition = self.parse_expression(&Precedence::Lowest)?;
+
+        self.next_token();
+
+        self.check_and_skip(&Token::RParen)?;
+
+        self.check_and_skip(&Token::LBrace)?;
+
+        let consequence = Some(self.parse_block_statement()?);
+
+        self.check_and_skip(&Token::RBrace)?;
+
+        let mut alternative = None;
+
+        if self.token == Token::Else {
+            self.next_token();
+
+            self.check_and_skip(&Token::LBrace)?;
+
+            alternative = Some(self.parse_block_statement()?);
+
+            self.check_and_skip(&Token::RBrace)?;
+        }
+
+        return Ok(Box::new(Expression::If { condition, consequence, alternative }))
+    }
+
+    fn parse_block_statement(&mut self) -> Result<BlockStatement, String> {
+        let mut result = BlockStatement { statements: vec![] };
+
+        while self.token != Token::RBrace && self.token != Token::Eof {
+            let statement = self.parse_statement()?;
+
+            result.statements.push(statement);
+        }
+
+
+        return Ok(result);
     }
 }

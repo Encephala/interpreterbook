@@ -278,3 +278,76 @@ fn boolean_expression() {
         Statement::ExpressionStatement { value: Box::new(Expression::Bool(false)) },
     ]);
 }
+
+#[test]
+fn if_expression() {
+    use Expression::*;
+
+    let input = "if (x < y) { x }";
+
+    let program = parse_then_check_errors_and_length(input, 1);
+
+    let statement = program.statements.first().unwrap();
+
+    if let Statement::ExpressionStatement { value } = statement {
+        if let Expression::If { condition, consequence, alternative } = value.as_ref() {
+            assert_eq!(**condition, Expression::InfixExpression {
+                left: Box::new(Ident("x".into())),
+                operator: InfixOperator::LessThan,
+                right: Box::new(Ident("y".into()))
+            });
+
+            if let Some(BlockStatement { statements }) = consequence {
+                assert_eq!(statements.len(), 1);
+                assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Box::new(Ident("x".into())) });
+            } else {
+                panic!("Consequence not a BlockStatement");
+            }
+
+            assert_eq!(*alternative, None);
+        } else {
+            panic!("Expression not an If expression");
+        }
+    } else {
+        panic!("Statement not an Expression statement");
+    }
+}
+
+#[test]
+fn if_else_expression() {
+    use Expression::*;
+
+    let input = "if (x < y) { x } else { y }";
+
+    let program = parse_then_check_errors_and_length(input, 1);
+
+    let statement = program.statements.first().unwrap();
+
+    if let Statement::ExpressionStatement { value } = statement {
+        if let Expression::If { condition, consequence, alternative } = value.as_ref() {
+            assert_eq!(**condition, Expression::InfixExpression {
+                left: Box::new(Ident("x".into())),
+                operator: InfixOperator::LessThan,
+                right: Box::new(Ident("y".into()))
+            });
+
+            if let Some(BlockStatement { statements }) = consequence {
+                assert_eq!(statements.len(), 1);
+                assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Box::new(Ident("x".into())) });
+            } else {
+                panic!("Consequence not a BlockStatement");
+            }
+
+            if let Some(BlockStatement { statements }) = alternative {
+                assert_eq!(statements.len(), 1);
+                assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Box::new(Ident("y".into())) });
+            } else {
+                panic!("Alternative not a BlockStatement");
+            }
+        } else {
+            panic!("Expression not an If expression");
+        }
+    } else {
+        panic!("Statement not an Expression statement");
+    }
+}

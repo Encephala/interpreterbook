@@ -237,7 +237,7 @@ impl<'a> Parser<'a> {
 
         self.next_token();
 
-        self.check_and_skip(&Token::Semicolon)?;
+        self.skip_if_token(&Token::Semicolon);
 
         return Ok(Statement::Let { name, value });
     }
@@ -250,7 +250,7 @@ impl<'a> Parser<'a> {
 
         self.next_token();
 
-        self.check_and_skip(&Token::Semicolon)?;
+        self.skip_if_token(&Token::Semicolon);
 
         return Ok(Statement::Return { value });
     }

@@ -63,6 +63,7 @@ impl AstNode for Statement {
     }
 }
 
+#[derive(Debug)]
 pub struct ExecutionEnvironment(
     HashMap<String, Object>
 );

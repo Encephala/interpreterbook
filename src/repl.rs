@@ -26,9 +26,12 @@ pub fn start() {
             break;
         }
 
-        let program = Parser::new(&input).parse_program();
+        if input == "env\n" {
+            println!("{environment:?}");
+            continue;
+        }
 
-        let mut environment = ExecutionEnvironment::new();
+        let program = Parser::new(&input).parse_program();
 
         if !program.errors.is_empty() {
             println!("Error(s) while parsing: {:?}", program.errors);

@@ -1,5 +1,7 @@
+use std::collections::HashMap;
+
 use super::super::parser::Parser;
-use super::{AstNode, Object, ExecutionEnvironment};
+use super::{AstNode, Object, Statement, Expression, InfixOperator, ExecutionEnvironment};
 
 fn evaluate(input: &str) -> Result<Object, String> {
     let program = Parser::new(input).parse_program();
@@ -199,4 +201,43 @@ fn unbound_variable_error() {
 
     dbg!(&result);
     assert!(result.is_err());
+}
+
+#[test]
+fn function_literal() {
+    let input = "fn(x) { x + 2; }";
+
+    let result = evaluate(input).unwrap();
+
+    if let Object::Function { parameters, body } = result {
+        assert_eq!(parameters, vec!["x".to_string()]);
+
+        assert_eq!(*body, Expression::Block(vec![
+            Statement::ExpressionStatement { value: Expression::InfixExpression {
+                left: Expression::Ident("x".into()).into(),
+                operator: InfixOperator::Plus,
+                right: Expression::Int(2).into()
+            }.into()}
+        ]));
+    }
+}
+
+#[test]
+fn function_call() {
+    struct TestCase<'a>(&'a str, isize);
+
+    let inputs = [
+        TestCase("let identity = fn(x) { x; }; identity(5);", 5),
+        TestCase("let identity = fn(x) { return x; }; identity(5);", 5),
+        TestCase("let double = fn(x) { x * 2; }; double(5);", 10),
+        TestCase("let add = fn(x, y) { x + y; }; add(5, 5);", 10),
+        TestCase("let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20),
+        TestCase("fn(x) { x; }(5)", 5),
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0).unwrap();
+
+        assert_eq!(result, Object::Int(test_case.1));
+    })
 }

@@ -10,6 +10,7 @@ pub enum Object {
     Int(isize),
     Bool(bool),
     Return(Box<Object>),
+    Function{ parameters: Vec<String>, body: Box<Expression> },
     None,
 }
 
@@ -38,6 +39,10 @@ impl std::fmt::Display for Object {
             Int(value) => write!(f, "{value}"),
             Bool(value) => write!(f, "{value}"),
             Return(value) => write!(f, "{value}"),
+            Function{ parameters, body } => write!(
+                f,
+                "fn({parameters:?}) {{{body:?}}}"
+            ),
             None => f.write_str("None"),
         }
     }
@@ -63,7 +68,7 @@ impl AstNode for Statement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ExecutionEnvironment(
     HashMap<String, Object>
 );
@@ -131,8 +136,18 @@ impl AstNode for Expression {
             Expression::If { condition, consequence, alternative } => {
                 evaluate_conditional_expression(condition, consequence, alternative, environment)
             },
-            Expression::Function { parameters, body } => todo!(),
-            Expression::CallExpression { function, arguments } => todo!(),
+            Expression::Function {
+                parameters,
+                body
+            } => Ok(Object::Function{
+                // TODO: Can we avoid cloning?
+                // Don't know yet, maybe if we just give Object a lifetime and work with refs?
+                parameters: parameters.clone(),
+                body: body.clone(),
+            }),
+            Expression::CallExpression {
+                function, arguments
+            } => evaluate_function_call(function, arguments, environment)
         }
     }
 }
@@ -253,4 +268,33 @@ fn evaluate_conditional_expression(
     }
 
     return Err(format!("Condition {:?} didn't evaluate to a Boolean object", condition));
+}
+
+fn evaluate_function_call(function: &Expression,
+    arguments: &Vec<Expression>,
+    environment: &mut ExecutionEnvironment
+) -> Result<Object, String> {
+    let function = function.evaluate(environment)?;
+
+    let arguments  = arguments.into_iter()
+        .map(|argument| argument.evaluate(environment))
+        .collect::<Result<Vec<Object>, String>>()?;
+
+    if let Object::Function{ parameters, body } = function {
+        if arguments.len() != parameters.len() {
+            return Err(
+                format!("Number of arguments {:?} does not equal number of parameters {:?}",
+                arguments.len(),
+                parameters.len())
+            );
+        }
+
+        let mut environment = environment.clone();
+
+        parameters.iter().zip(arguments).for_each(|(parameter, argument)| environment.insert(parameter, argument));
+
+        return body.evaluate(&mut environment);
+    } else {
+        panic!("I did the stupid again");
+    }
 }

@@ -1,6 +1,4 @@
-use crate::parser::BlockStatement;
-
-use super::parser::{Statement, Expression, Program, PrefixOperator, InfixOperator};
+use super::parser::{Statement, Expression, Program, PrefixOperator, InfixOperator, BlockStatement};
 
 #[cfg(test)]
 mod tests;
@@ -9,6 +7,7 @@ mod tests;
 pub enum Object {
     Int(isize),
     Bool(bool),
+    Return(Box<Object>),
     Null,
 }
 
@@ -19,6 +18,7 @@ impl Object {
         match &self {
             Object::Int(value) => format!("{value}"),
             Object::Bool(value) => format!("{value}"),
+            Object::Return(value) => format!("{value}"),
             Object::Null => format!("NULL"),
         }
     }
@@ -43,23 +43,24 @@ impl Object {
 impl std::fmt::Display for Object {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self {
-            Int(value) => write!(f, "{}", value),
-            Bool(value) => write!(f, "{}", value),
+            Int(value) => write!(f, "{value}"),
+            Bool(value) => write!(f, "{value}"),
+            Return(value) => write!(f, "{value}"),
             Null => f.write_str("NULL"),
         }
     }
 }
 
 pub trait AstNode {
-    fn eval(&self) -> Result<Object, String>;
+    fn evaluate(&self) -> Result<Object, String>;
 }
 
 impl AstNode for Statement {
-    fn eval(&self) -> Result<Object, String> {
+    fn evaluate(&self) -> Result<Object, String> {
         match &self {
             Statement::Let { name, value } => evaluate_let_statement(name, value),
             Statement::Return { value } => evaluate_return_statement(value),
-            Statement::ExpressionStatement { value } => value.eval(),
+            Statement::ExpressionStatement { value } => value.evaluate(),
         }
     }
 }
@@ -69,29 +70,33 @@ fn evaluate_let_statement(name: &str, value: &Expression) -> Result<Object, Stri
 }
 
 fn evaluate_return_statement(value: &Expression) -> Result<Object, String> {
-    todo!();
+    return Ok(Object::Return(Box::new(value.evaluate()?)));
 }
 
 impl AstNode for Program {
-    fn eval(&self) -> Result<Object, String> {
-        return eval_statements(&self.statements);
+    fn evaluate(&self) -> Result<Object, String> {
+        return evaluate_statements(&self.statements);
     }
 }
 
-fn eval_statements(statements: &Vec<Statement>) -> Result<Object, String> {
-    if statements.is_empty() {
-        return Ok(Object::Null);
+fn evaluate_statements(statements: &Vec<Statement>) -> Result<Object, String> {
+    // If no statements, result is Null
+    let mut result = Object::Null;
+
+    for statement in statements.iter() {
+        result = statement.evaluate()?;
+
+        // Early return, destructuring the Return object
+        if let Object::Return(value) = result {
+            return Ok(*value);
+        }
     }
 
-    for statement in statements.iter().rev().skip(1).rev() {
-        statement.eval()?;
-    }
-
-    return statements.last().unwrap().eval();
+    return Ok(result);
 }
 
 impl AstNode for Expression {
-    fn eval(&self) -> Result<Object, String> {
+    fn evaluate(&self) -> Result<Object, String> {
         match &self{
             Expression::Ident(_) => todo!(),
             Expression::Int(value) => Ok(Int(*value as isize)),
@@ -106,13 +111,13 @@ impl AstNode for Expression {
 }
 
 impl AstNode for BlockStatement {
-    fn eval(&self) -> Result<Object, String> {
-        return eval_statements(&self.statements);
+    fn evaluate(&self) -> Result<Object, String> {
+        return evaluate_statements(&self.statements);
     }
 }
 
 fn evaluate_prefix_expression(operator: &PrefixOperator, right: &Expression) -> Result<Object, String> {
-    let right = right.eval()?;
+    let right = right.evaluate()?;
 
     return match operator {
         PrefixOperator::Minus => evaluate_prefix_minus(right),
@@ -139,8 +144,8 @@ fn evaluate_prefix_minus(right: Object) -> Result<Object, String> {
 }
 
 fn evaluate_infix_expression(left: &Expression, operator: &InfixOperator, right: &Expression) -> Result<Object, String> {
-    let left = &left.eval()?;
-    let right = &right.eval()?;
+    let left = &left.evaluate()?;
+    let right = &right.evaluate()?;
 
     return evaluate_infix(left, operator, right);
 }
@@ -184,13 +189,13 @@ fn evaluate_infix_boolean(left: bool, operator: &InfixOperator, right: bool) -> 
 }
 
 fn evaluate_conditional_expression(condition: &Expression, consequence: &BlockStatement, alternative: &Option<BlockStatement>) -> Result<Object, String> {
-    if let Bool(value) = condition.eval()?.as_truthy()? {
+    if let Bool(value) = condition.evaluate()?.as_truthy()? {
         if value {
-            return consequence.eval();
+            return consequence.evaluate();
         }
 
         if let Some(alternative) = alternative {
-            return alternative.eval();
+            return alternative.evaluate();
         }
 
         return Ok(Object::Null);

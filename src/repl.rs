@@ -31,7 +31,7 @@ pub fn start() {
             continue;
         }
 
-        let result = program.eval();
+        let result = program.evaluate();
 
         if let Err(message) = result {
             println!("Error while executing: {:?}", message);

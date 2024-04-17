@@ -7,7 +7,7 @@ fn evaluate(input: &str) -> Result<Object, String> {
 
     assert!(program.errors.is_empty());
 
-    return program.eval();
+    return program.evaluate();
 }
 
 #[test]
@@ -120,5 +120,22 @@ fn conditional_expression() {
         let result = evaluate(test_case.0).unwrap();
 
         assert_eq!(result, test_case.1);
+    })
+}
+
+#[test]
+fn return_statement() {
+    struct TestCase<'a>(&'a str, isize);
+
+    let inputs = [
+        TestCase("return 10", 10),
+        TestCase("return 2 * 5; 9", 10),
+        TestCase("1; return 2; 3", 2)
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0).unwrap();
+
+        assert_eq!(result, Object::Int(test_case.1));
     })
 }

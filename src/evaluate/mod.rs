@@ -271,12 +271,12 @@ fn evaluate_conditional_expression(
 }
 
 fn evaluate_function_call(function: &Expression,
-    arguments: &Vec<Expression>,
+    arguments: &[Expression],
     environment: &mut ExecutionEnvironment
 ) -> Result<Object, String> {
     let function = function.evaluate(environment)?;
 
-    let arguments  = arguments.into_iter()
+    let arguments  = arguments.iter()
         .map(|argument| argument.evaluate(environment))
         .collect::<Result<Vec<Object>, String>>()?;
 

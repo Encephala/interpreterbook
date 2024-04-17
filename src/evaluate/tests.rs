@@ -260,3 +260,17 @@ fn function_return_bubbling() {
 
     assert_eq!(result, Object::Int(3));
 }
+
+#[test]
+fn recursion() {
+    let input = "let factorial = fn(x) {
+        if (x < 3) { return x }
+        else { return x * factorial(x - 1) }
+    };
+
+    factorial(5)";
+
+    let result = evaluate(input).unwrap();
+
+    assert_eq!(result, Object::Int(120));
+}

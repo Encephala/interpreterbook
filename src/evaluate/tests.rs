@@ -239,6 +239,9 @@ fn function_call() {
         TestCase("let add = fn(x, y) { x + y; }; add(5, 5);", 10),
         TestCase("let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20),
         TestCase("fn(x) { x; }(5)", 5),
+        TestCase("let newAdder = fn(x) { fn(y) { x + y } };
+        let addTwo = newAdder(2);
+        addTwo(3)", 5),
     ];
 
     inputs.iter().for_each(|test_case| {

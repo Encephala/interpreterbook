@@ -14,16 +14,6 @@ pub enum Object {
 use Object::*;
 
 impl Object {
-    fn inspect(&self) -> String {
-        match &self {
-            Object::Int(value) => format!("{value}"),
-            Object::Bool(value) => format!("{value}"),
-            Object::Return(value) => format!("{value}"),
-            Object::None => format!("None"),
-        }
-    }
-
-
     fn as_truthy(&self) -> Result<Object, String> {
         match &self {
             Int(value) => Ok(Bool(*value != 0)),

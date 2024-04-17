@@ -48,6 +48,10 @@ impl std::fmt::Display for Object {
     }
 }
 
+
+pub type ExecutionEnvironment = HashMap<String, Object>;
+
+
 pub trait AstNode {
     fn evaluate(&self, environment: &mut ExecutionEnvironment) -> Result<Object, String>;
 }
@@ -68,33 +72,11 @@ impl AstNode for Statement {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct ExecutionEnvironment(
-    HashMap<String, Object>
-);
-
-impl ExecutionEnvironment {
-    pub fn new() -> Self {
-        return Self(HashMap::new());
-    }
-
-    pub fn get(&mut self, key: &str) -> Result<Object, String> {
-        let result = self.0.get(key);
-
-        return result.map(Object::clone).ok_or(format!("Variable {key} doesn't exist"));
-    }
-
-    pub fn insert(&mut self, key: &str, value: Object) -> &mut Self {
-        self.0.insert(key.into(), value);
-
-        return self;
-    }
-}
 
 fn evaluate_let_statement(name: &str, value: &Expression, environment: &mut ExecutionEnvironment) -> Result<Object, String> {
     let value = value.evaluate(environment)?;
 
-    environment.insert(name, value);
+    environment.insert(name.into(), value);
 
     return Ok(Object::None);
 }
@@ -125,7 +107,11 @@ impl AstNode for Expression {
     fn evaluate(&self, environment: &mut ExecutionEnvironment) -> Result<Object, String> {
         match &self{
             Expression::Empty => Ok(Object::None),
-            Expression::Ident(name) => environment.get(name),
+            Expression::Ident(name) => {
+                environment.get(name)
+                    .map(Object::clone)
+                    .ok_or(format!("Variable {name} doesn't exist"))
+            },
             Expression::Int(value) => Ok(Int(*value as isize)),
             Expression::Bool(value) => Ok(Bool(*value)),
             Expression::Block(statements) => evaluate_block_expression(statements, environment),
@@ -293,7 +279,7 @@ fn evaluate_function_call(function: &Expression,
         }
 
         parameters.iter().zip(arguments).for_each(|(parameter, argument)| {
-            environment.insert(parameter, argument);
+            environment.insert(parameter.into(), argument);
         });
 
         return body.evaluate(&mut environment);

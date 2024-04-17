@@ -65,24 +65,20 @@ fn evaluate_return_statement(value: &Expression) -> Result<Object, String> {
 
 impl AstNode for Program {
     fn evaluate(&self) -> Result<Object, String> {
-        return evaluate_statements(&self.statements);
-    }
-}
+        // If no statements, result is None
+        let mut result = Object::None;
 
-fn evaluate_statements(statements: &[Statement]) -> Result<Object, String> {
-    // If no statements, result is None
-    let mut result = Object::None;
+        for statement in self.statements.iter() {
+            result = statement.evaluate()?;
 
-    for statement in statements.iter() {
-        result = statement.evaluate()?;
-
-        // Early return, destructuring the Return object
-        if let Object::Return(value) = result {
-            return Ok(*value);
+            // Early return, destructuring the Return object
+            if let Object::Return(value) = result {
+                return Ok(*value);
+            }
         }
-    }
 
-    return Ok(result);
+        return Ok(result);
+    }
 }
 
 impl AstNode for Expression {
@@ -92,7 +88,7 @@ impl AstNode for Expression {
             Expression::Ident(_) => todo!(),
             Expression::Int(value) => Ok(Int(*value as isize)),
             Expression::Bool(value) => Ok(Bool(*value)),
-            Expression::Block(statements) => evaluate_statements(statements),
+            Expression::Block(statements) => evaluate_block_expression(statements),
             Expression::PrefixExpression { operator, right } => evaluate_prefix_expression(operator, right.as_ref()),
             Expression::InfixExpression { left, operator, right } => evaluate_infix_expression(left.as_ref(), operator, right.as_ref()),
             Expression::If { condition, consequence, alternative } => evaluate_conditional_expression(condition, consequence, alternative),
@@ -100,6 +96,22 @@ impl AstNode for Expression {
             Expression::CallExpression { function, arguments } => todo!(),
         }
     }
+}
+
+fn evaluate_block_expression(statements: &[Statement]) -> Result<Object, String> {
+    // If no statements, result is None
+    let mut result = Object::None;
+
+    for statement in statements.iter() {
+        result = statement.evaluate()?;
+
+        // Early return, without destructuring
+        if matches!(Object::Return, result) {
+            return Ok(result);
+        }
+    }
+
+    return Ok(result);
 }
 
 fn evaluate_prefix_expression(operator: &PrefixOperator, right: &Expression) -> Result<Object, String> {

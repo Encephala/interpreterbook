@@ -159,3 +159,12 @@ fn return_statement() {
         assert_eq!(result, Object::Int(test_case.1));
     })
 }
+
+#[test]
+fn nested_returns() {
+    let input = "{ { return 10 } return 1 }";
+
+    let result = evaluate(input).unwrap();
+
+    assert_eq!(result, Object::Int(10));
+}

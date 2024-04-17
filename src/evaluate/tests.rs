@@ -6,7 +6,6 @@ fn evaluate(input: &str) -> Result<Object, String> {
     let program = Parser::new(input).parse_program();
 
     dbg!(&program.errors);
-
     assert!(program.errors.is_empty());
 
     return program.evaluate();
@@ -89,7 +88,10 @@ fn prefix_operator_minus_error_for_incompatible_types() {
         "-true",
         "-(5 > 3)"
     ].iter().for_each(|input| {
-        assert!(evaluate(input).is_err());
+        let result = evaluate(input);
+
+        dbg!(&result);
+        assert!(result.is_err());
     });
 }
 
@@ -167,4 +169,31 @@ fn nested_returns() {
     let result = evaluate(input).unwrap();
 
     assert_eq!(result, Object::Int(10));
+}
+
+#[test]
+fn let_statements() {
+    struct TestCase<'a>(&'a str, isize);
+
+    let inputs = [
+        TestCase("let a = 5; a", 5),
+        TestCase("let a = 5; let b = a; a * b;", 25),
+        TestCase("let a = 1; let b = 2, let c = a + b + 3; c", 6)
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0).unwrap();
+
+        assert_eq!(result, Object::Int(test_case.1));
+    })
+}
+
+#[test]
+fn unbound_variable_error() {
+    let input = "foobar;";
+
+    let result = evaluate(input);
+
+    dbg!(&result);
+    assert!(result.is_err());
 }

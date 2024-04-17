@@ -5,6 +5,8 @@ use super::{AstNode, Object};
 fn evaluate(input: &str) -> Result<Object, String> {
     let program = Parser::new(input).parse_program();
 
+    dbg!(&program.errors);
+
     assert!(program.errors.is_empty());
 
     return program.evaluate();
@@ -113,7 +115,7 @@ fn conditional_expression() {
         TestCase("if (1) { 10 }", Int(10)),
         TestCase("if (1 > 2) { 10 } else { 20 }", Int(20)),
         TestCase("if (0) { 1 } else { 2 }", Int(2)),
-        TestCase("if (0) { 10 }", Null),
+        TestCase("if (0) { 10 }", None),
     ];
 
     inputs.iter().for_each(|test_case| {

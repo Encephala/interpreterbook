@@ -8,7 +8,7 @@ pub enum Object {
     Int(isize),
     Bool(bool),
     Return(Box<Object>),
-    Null,
+    None,
 }
 
 use Object::*;
@@ -19,7 +19,7 @@ impl Object {
             Object::Int(value) => format!("{value}"),
             Object::Bool(value) => format!("{value}"),
             Object::Return(value) => format!("{value}"),
-            Object::Null => format!("NULL"),
+            Object::None => format!("None"),
         }
     }
 
@@ -46,7 +46,7 @@ impl std::fmt::Display for Object {
             Int(value) => write!(f, "{value}"),
             Bool(value) => write!(f, "{value}"),
             Return(value) => write!(f, "{value}"),
-            Null => f.write_str("NULL"),
+            None => f.write_str("None"),
         }
     }
 }
@@ -80,8 +80,8 @@ impl AstNode for Program {
 }
 
 fn evaluate_statements(statements: &Vec<Statement>) -> Result<Object, String> {
-    // If no statements, result is Null
-    let mut result = Object::Null;
+    // If no statements, result is None
+    let mut result = Object::None;
 
     for statement in statements.iter() {
         result = statement.evaluate()?;
@@ -199,7 +199,7 @@ fn evaluate_conditional_expression(condition: &Expression, consequence: &BlockSt
             return alternative.evaluate();
         }
 
-        return Ok(Object::Null);
+        return Ok(Object::None);
     }
 
     return Err(format!("Condition {:?} didn't evaluate to a Boolean object", condition));

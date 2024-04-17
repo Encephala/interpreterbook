@@ -27,10 +27,11 @@ pub enum Expression {
     Ident(String),
     Int(usize),
     Bool(bool),
+    Block(Vec<Statement>),
     PrefixExpression { operator: PrefixOperator, right: Box<Expression> },
     InfixExpression { left: Box<Expression>, operator: InfixOperator, right: Box<Expression> },
-    If { condition: Box<Expression>, consequence: BlockStatement, alternative: Option<BlockStatement> },
-    Function { parameters: Vec<String>, body: BlockStatement },
+    If { condition: Box<Expression>, consequence: Box<Expression>, alternative: Option<Box<Expression>> },
+    Function { parameters: Vec<String>, body: Box<Expression> },
     CallExpression {
         function: Box<Expression>, // Always either Ident or Function
         arguments: Vec<Expression>
@@ -100,12 +101,6 @@ enum Precedence {
     Product,
     Prefix,
     Call
-}
-
-
-#[derive(Debug, PartialEq)]
-pub struct BlockStatement {
-    pub statements: Vec<Statement>
 }
 
 
@@ -376,7 +371,7 @@ impl<'a> Parser<'a> {
 
         self.check_and_skip(&Token::LBrace)?;
 
-        let consequence = self.parse_block_statement()?;
+        let consequence = self.parse_block_expression()?;
 
         self.check_and_skip(&Token::RBrace)?;
 
@@ -387,7 +382,7 @@ impl<'a> Parser<'a> {
 
             self.check_and_skip(&Token::LBrace)?;
 
-            alternative = Some(self.parse_block_statement()?);
+            alternative = Some(self.parse_block_expression()?);
 
             self.check_and_skip(&Token::RBrace)?;
         }
@@ -395,16 +390,16 @@ impl<'a> Parser<'a> {
         return Ok(Expression::If { condition, consequence, alternative }.into())
     }
 
-    fn parse_block_statement(&mut self) -> Result<BlockStatement, String> {
-        let mut result = BlockStatement { statements: vec![] };
+    fn parse_block_expression(&mut self) -> Result<Box<Expression>, String> {
+        let mut result = vec![];
 
         while self.token != Token::RBrace && self.token != Token::Eof {
             let statement = self.parse_statement()?;
 
-            result.statements.push(statement);
+            result.push(statement);
         }
 
-        return Ok(result);
+        return Ok(Expression::Block(result).into());
     }
 
     fn parse_function_literal(&mut self) -> Result<Box<Expression>, String> {
@@ -418,7 +413,7 @@ impl<'a> Parser<'a> {
 
         self.check_and_skip(&Token::LBrace)?;
 
-        let body = self.parse_block_statement()?;
+        let body = self.parse_block_expression()?;
 
         self.check_and_skip(&Token::RBrace)?;
 

@@ -325,12 +325,14 @@ fn if_expression() {
             right: Ident("y".into()).into(),
         });
 
-        let BlockStatement { statements } = consequence;
+        if let Expression::Block(statements) = consequence.as_ref() {
+            assert_eq!(statements.len(), 1);
+            assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Ident("x".into()).into() });
 
-        assert_eq!(statements.len(), 1);
-        assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Ident("x".into()).into() });
-
-        assert_eq!(*alternative, None);
+            assert_eq!(*alternative, None);
+        } else {
+            panic!("Consequence not a block expression");
+        }
     } else {
         panic!("Expression not an If expression");
     }
@@ -355,16 +357,22 @@ fn if_else_expression() {
             right: Ident("y".into()).into(),
         });
 
-        let BlockStatement { statements } = consequence;
-
-        assert_eq!(statements.len(), 1);
-        assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Ident("x".into()).into() });
-
-        if let Some(BlockStatement { statements }) = alternative {
+        if let Expression::Block(statements) = consequence.as_ref() {
             assert_eq!(statements.len(), 1);
-            assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Ident("y".into()).into() });
+            assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Ident("x".into()).into() });
         } else {
-            panic!("Alternative not a BlockStatement");
+            panic!("Consequence not a block expression");
+        }
+
+        if let Some(alternative) = alternative {
+            if let Expression::Block(statements) = alternative.as_ref() {
+                assert_eq!(statements.len(), 1);
+                assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Ident("y".into()).into() });
+            } else {
+                panic!("Alternative not a BlockStatement");
+            }
+        } else {
+            panic!("Consequence not a block expression");
         }
     } else {
         panic!("Expression not an If expression");
@@ -390,7 +398,7 @@ fn function_parameters() {
 
         if let Expression::Function { parameters, body } = value {
             assert_eq!(*parameters, test_case.1);
-            assert_eq!(*body, BlockStatement { statements: vec![] });
+            assert_eq!(*body, Expression::Block(vec![]).into());
         } else {
             panic!("Expression not a Function expression")
         }
@@ -411,15 +419,13 @@ fn function_literal() {
 
     if let Function { parameters, body } = value {
         assert_eq!(*parameters, vec!["x".to_string(), "y".to_string()]);
-        assert_eq!(*body, BlockStatement {
-            statements: vec![
+        assert_eq!(*body, Expression::Block(vec![
                 Statement::ExpressionStatement { value: Expression::InfixExpression {
                     left: Ident("x".into()).into(),
                     operator: InfixOperator::Plus,
                     right: Ident("y".into()).into(),
                 }.into()}
-            ]
-            });
+            ]).into());
     } else {
         panic!("Expression not a Function expression");
     }

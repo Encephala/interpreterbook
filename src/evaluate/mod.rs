@@ -1,4 +1,4 @@
-use super::parser::{Statement, Expression, Program, PrefixOperator, InfixOperator, BlockStatement};
+use super::parser::{Statement, Expression, Program, PrefixOperator, InfixOperator};
 
 #[cfg(test)]
 mod tests;
@@ -92,18 +92,13 @@ impl AstNode for Expression {
             Expression::Ident(_) => todo!(),
             Expression::Int(value) => Ok(Int(*value as isize)),
             Expression::Bool(value) => Ok(Bool(*value)),
+            Expression::Block(statements) => evaluate_statements(statements),
             Expression::PrefixExpression { operator, right } => evaluate_prefix_expression(operator, right.as_ref()),
             Expression::InfixExpression { left, operator, right } => evaluate_infix_expression(left.as_ref(), operator, right.as_ref()),
             Expression::If { condition, consequence, alternative } => evaluate_conditional_expression(condition, consequence, alternative),
             Expression::Function { parameters, body } => todo!(),
             Expression::CallExpression { function, arguments } => todo!(),
         }
-    }
-}
-
-impl AstNode for BlockStatement {
-    fn evaluate(&self) -> Result<Object, String> {
-        return evaluate_statements(&self.statements);
     }
 }
 
@@ -179,7 +174,7 @@ fn evaluate_infix_boolean(left: bool, operator: &InfixOperator, right: bool) -> 
     }
 }
 
-fn evaluate_conditional_expression(condition: &Expression, consequence: &BlockStatement, alternative: &Option<BlockStatement>) -> Result<Object, String> {
+fn evaluate_conditional_expression(condition: &Expression, consequence: &Box<Expression>, alternative: &Option<Box<Expression>>) -> Result<Object, String> {
     if let Bool(value) = condition.evaluate()?.as_truthy()? {
         if value {
             return consequence.evaluate();

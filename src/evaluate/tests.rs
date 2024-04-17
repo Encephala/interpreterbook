@@ -181,7 +181,7 @@ fn let_statements() {
     let inputs = [
         TestCase("let a = 5; a", 5),
         TestCase("let a = 5; let b = a; a * b;", 25),
-        TestCase("let a = 1; let b = 2, let c = a + b + 3; c", 6)
+        TestCase("let a = 1; let b = 2; let c = a + b + 3; c", 6)
     ];
 
     inputs.iter().for_each(|test_case| {

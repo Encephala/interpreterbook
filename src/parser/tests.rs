@@ -325,12 +325,10 @@ fn if_expression() {
             right: Ident("y".into()).into(),
         });
 
-        if let BlockStatement { statements } = consequence {
-            assert_eq!(statements.len(), 1);
-            assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Ident("x".into()).into() });
-        } else {
-            panic!("Consequence not a BlockStatement");
-        }
+        let BlockStatement { statements } = consequence;
+
+        assert_eq!(statements.len(), 1);
+        assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Ident("x".into()).into() });
 
         assert_eq!(*alternative, None);
     } else {

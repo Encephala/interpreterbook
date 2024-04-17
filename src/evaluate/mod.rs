@@ -69,7 +69,7 @@ impl AstNode for Program {
     }
 }
 
-fn evaluate_statements(statements: &Vec<Statement>) -> Result<Object, String> {
+fn evaluate_statements(statements: &[Statement]) -> Result<Object, String> {
     // If no statements, result is None
     let mut result = Object::None;
 

@@ -294,6 +294,7 @@ impl<'a> Parser<'a> {
             If => self.parse_if_expression(),
             Function => self.parse_function_literal(),
             Semicolon => Ok(Expression::Empty.into()), // If statement starts with semicolon, it is an empty statement
+            LBrace => self.parse_block_expression(),
             _ => Err(format!("No prefix parser found for {:?}", self.token))
         };
 
@@ -369,28 +370,22 @@ impl<'a> Parser<'a> {
 
         self.check_and_skip(&Token::RParen)?;
 
-        self.check_and_skip(&Token::LBrace)?;
-
         let consequence = self.parse_block_expression()?;
-
-        self.check_and_skip(&Token::RBrace)?;
 
         let mut alternative = None;
 
         if self.token == Token::Else {
             self.next_token();
 
-            self.check_and_skip(&Token::LBrace)?;
-
             alternative = Some(self.parse_block_expression()?);
-
-            self.check_and_skip(&Token::RBrace)?;
         }
 
         return Ok(Expression::If { condition, consequence, alternative }.into())
     }
 
     fn parse_block_expression(&mut self) -> Result<Box<Expression>, String> {
+        self.check_and_skip(&Token::LBrace)?;
+
         let mut result = vec![];
 
         while self.token != Token::RBrace && self.token != Token::Eof {
@@ -398,6 +393,8 @@ impl<'a> Parser<'a> {
 
             result.push(statement);
         }
+
+        self.check_and_skip(&Token::RBrace)?;
 
         return Ok(Expression::Block(result).into());
     }
@@ -411,11 +408,7 @@ impl<'a> Parser<'a> {
 
         self.check_and_skip(&Token::RParen)?;
 
-        self.check_and_skip(&Token::LBrace)?;
-
         let body = self.parse_block_expression()?;
-
-        self.check_and_skip(&Token::RBrace)?;
 
         return Ok(Expression::Function { parameters, body }.into());
     }

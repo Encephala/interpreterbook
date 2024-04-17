@@ -126,12 +126,21 @@ fn conditional_expression() {
 }
 
 #[test]
-fn empty_program_returns_null() {
+fn empty_program_returns_none() {
     let input = ";";
 
     let result = evaluate(input).unwrap();
 
     assert_eq!(result, Object::None);
+}
+
+#[test]
+fn empty_block_statement_returns_none() {
+    let input = "{};";
+
+    let result = evaluate(input).unwrap();
+
+    assert_eq!(result, Object::None)
 }
 
 #[test]

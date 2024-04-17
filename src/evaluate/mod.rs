@@ -10,7 +10,7 @@ pub enum Object {
     Int(isize),
     Bool(bool),
     Return(Box<Object>),
-    Function{ parameters: Vec<String>, body: Box<Expression> },
+    Function{ parameters: Vec<String>, body: Box<Expression>, environment: ExecutionEnvironment },
     None,
 }
 
@@ -39,9 +39,9 @@ impl std::fmt::Display for Object {
             Int(value) => write!(f, "{value}"),
             Bool(value) => write!(f, "{value}"),
             Return(value) => write!(f, "{value}"),
-            Function{ parameters, body } => write!(
+            Function{ parameters, body, environment} => write!(
                 f,
-                "fn({parameters:?}) {{{body:?}}}"
+                "fn({parameters:?}) {{{body:?}}} with env {environment:?}"
             ),
             None => f.write_str("None"),
         }
@@ -84,8 +84,10 @@ impl ExecutionEnvironment {
         return result.map(Object::clone).ok_or(format!("Variable {key} doesn't exist"));
     }
 
-    pub fn insert(&mut self, key: &str, value: Object) {
+    pub fn insert(&mut self, key: &str, value: Object) -> &mut Self {
         self.0.insert(key.into(), value);
+
+        return self;
     }
 }
 
@@ -144,6 +146,7 @@ impl AstNode for Expression {
                 // Don't know yet, maybe if we just give Object a lifetime and work with refs?
                 parameters: parameters.clone(),
                 body: body.clone(),
+                environment: environment.clone()
             }),
             Expression::CallExpression {
                 function, arguments
@@ -280,7 +283,7 @@ fn evaluate_function_call(function: &Expression,
         .map(|argument| argument.evaluate(environment))
         .collect::<Result<Vec<Object>, String>>()?;
 
-    if let Object::Function{ parameters, body } = function {
+    if let Object::Function{ parameters, body, mut environment} = function {
         if arguments.len() != parameters.len() {
             return Err(
                 format!("Number of arguments {:?} does not equal number of parameters {:?}",
@@ -289,9 +292,9 @@ fn evaluate_function_call(function: &Expression,
             );
         }
 
-        let mut environment = environment.clone();
-
-        parameters.iter().zip(arguments).for_each(|(parameter, argument)| environment.insert(parameter, argument));
+        parameters.iter().zip(arguments).for_each(|(parameter, argument)| {
+            environment.insert(parameter, argument);
+        });
 
         return body.evaluate(&mut environment);
     } else {

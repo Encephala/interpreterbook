@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use super::super::parser::Parser;
 use super::{AstNode, Object, Statement, Expression, InfixOperator, ExecutionEnvironment};
 
@@ -209,7 +207,7 @@ fn function_literal() {
 
     let result = evaluate(input).unwrap();
 
-    if let Object::Function { parameters, body } = result {
+    if let Object::Function { parameters, body , environment} = result {
         assert_eq!(parameters, vec!["x".to_string()]);
 
         assert_eq!(*body, Expression::Block(vec![
@@ -219,6 +217,8 @@ fn function_literal() {
                 right: Expression::Int(2).into()
             }.into()}
         ]));
+
+        assert_eq!(environment, ExecutionEnvironment::new());
     }
 }
 

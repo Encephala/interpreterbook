@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::parser::{Statement, Expression, Program, PrefixOperator, InfixOperator};
 
 #[cfg(test)]
@@ -42,34 +44,52 @@ impl std::fmt::Display for Object {
 }
 
 pub trait AstNode {
-    fn evaluate(&self) -> Result<Object, String>;
+    fn evaluate(&self, environment: &mut ExecutionEnvironment) -> Result<Object, String>;
 }
 
 impl AstNode for Statement {
-    fn evaluate(&self) -> Result<Object, String> {
+    fn evaluate(&self, environment: &mut ExecutionEnvironment) -> Result<Object, String> {
         match &self {
-            Statement::Let { name, value } => evaluate_let_statement(name, value),
-            Statement::Return { value } => evaluate_return_statement(value),
-            Statement::ExpressionStatement { value } => value.evaluate(),
+            Statement::Let { name, value } => {
+                evaluate_let_statement(name, value, environment)
+            },
+            Statement::Return { value } => {
+                evaluate_return_statement(value, environment)
+            },
+            Statement::ExpressionStatement { value } => {
+                value.evaluate(environment)
+            },
         }
     }
 }
 
-fn evaluate_let_statement(name: &str, value: &Expression) -> Result<Object, String> {
-    todo!();
+pub struct ExecutionEnvironment(
+    HashMap<String, Object>
+);
+
+impl ExecutionEnvironment {
+    pub fn new() -> Self {
+        return Self(HashMap::new());
+    }
 }
 
-fn evaluate_return_statement(value: &Expression) -> Result<Object, String> {
-    return Ok(Object::Return(value.evaluate()?.into()));
+fn evaluate_let_statement(name: &str, value: &Expression, environment: &mut ExecutionEnvironment) -> Result<Object, String> {
+    let value = value.evaluate(environment)?;
+
+    return Ok(Object::None);
+}
+
+fn evaluate_return_statement(value: &Expression, environment: &mut ExecutionEnvironment) -> Result<Object, String> {
+    return Ok(Object::Return(value.evaluate(environment)?.into()));
 }
 
 impl AstNode for Program {
-    fn evaluate(&self) -> Result<Object, String> {
+    fn evaluate(&self, environment: &mut ExecutionEnvironment) -> Result<Object, String> {
         // If no statements, result is None
         let mut result = Object::None;
 
         for statement in self.statements.iter() {
-            result = statement.evaluate()?;
+            result = statement.evaluate(environment)?;
 
             // Early return, destructuring the Return object
             if let Object::Return(value) = result {
@@ -82,40 +102,50 @@ impl AstNode for Program {
 }
 
 impl AstNode for Expression {
-    fn evaluate(&self) -> Result<Object, String> {
+    fn evaluate(&self, environment: &mut ExecutionEnvironment) -> Result<Object, String> {
         match &self{
             Expression::Empty => Ok(Object::None),
             Expression::Ident(_) => todo!(),
             Expression::Int(value) => Ok(Int(*value as isize)),
             Expression::Bool(value) => Ok(Bool(*value)),
-            Expression::Block(statements) => evaluate_block_expression(statements),
-            Expression::PrefixExpression { operator, right } => evaluate_prefix_expression(operator, right.as_ref()),
-            Expression::InfixExpression { left, operator, right } => evaluate_infix_expression(left.as_ref(), operator, right.as_ref()),
-            Expression::If { condition, consequence, alternative } => evaluate_conditional_expression(condition, consequence, alternative),
+            Expression::Block(statements) => evaluate_block_expression(statements, environment),
+            Expression::PrefixExpression { operator, right } => {
+                evaluate_prefix_expression(operator, right.as_ref(), environment)
+            },
+            Expression::InfixExpression { left, operator, right } => {
+                evaluate_infix_expression(left.as_ref(), operator, right.as_ref(), environment)
+            },
+            Expression::If { condition, consequence, alternative } => {
+                evaluate_conditional_expression(condition, consequence, alternative, environment)
+            },
             Expression::Function { parameters, body } => todo!(),
             Expression::CallExpression { function, arguments } => todo!(),
         }
     }
 }
 
-fn evaluate_block_expression(statements: &[Statement]) -> Result<Object, String> {
+fn evaluate_block_expression(statements: &[Statement], environment: &mut ExecutionEnvironment) -> Result<Object, String> {
     // If no statements, result is None
     let mut result = Object::None;
 
     for statement in statements.iter() {
-        result = statement.evaluate()?;
+        result = statement.evaluate(environment)?;
 
         // Early return, without destructuring
-        if matches!(Object::Return, result) {
-            return Ok(result);
+        if let Object::Return(value) = result {
+            return Ok(Object::Return(value));
         }
     }
 
     return Ok(result);
 }
 
-fn evaluate_prefix_expression(operator: &PrefixOperator, right: &Expression) -> Result<Object, String> {
-    let right = right.evaluate()?;
+fn evaluate_prefix_expression(
+    operator: &PrefixOperator,
+    right: &Expression,
+    environment: &mut ExecutionEnvironment
+) -> Result<Object, String> {
+    let right = right.evaluate(environment)?;
 
     return match operator {
         PrefixOperator::Minus => evaluate_prefix_minus(right),
@@ -141,9 +171,14 @@ fn evaluate_prefix_minus(right: Object) -> Result<Object, String> {
     panic!("Can I stop being stupid");
 }
 
-fn evaluate_infix_expression(left: &Expression, operator: &InfixOperator, right: &Expression) -> Result<Object, String> {
-    let left = &left.evaluate()?;
-    let right = &right.evaluate()?;
+fn evaluate_infix_expression(
+    left: &Expression,
+    operator: &InfixOperator,
+    right: &Expression,
+    environment: &mut ExecutionEnvironment
+) -> Result<Object, String> {
+    let left = &left.evaluate(environment)?;
+    let right = &right.evaluate(environment)?;
 
     return evaluate_infix(left, operator, right);
 }
@@ -186,14 +221,19 @@ fn evaluate_infix_boolean(left: bool, operator: &InfixOperator, right: bool) -> 
     }
 }
 
-fn evaluate_conditional_expression(condition: &Expression, consequence: &Expression, alternative: &Option<Box<Expression>>) -> Result<Object, String> {
-    if let Bool(value) = condition.evaluate()?.as_truthy()? {
+fn evaluate_conditional_expression(
+    condition: &Expression,
+    consequence: &Expression,
+    alternative: &Option<Box<Expression>>,
+    environment: &mut ExecutionEnvironment
+) -> Result<Object, String> {
+    if let Bool(value) = condition.evaluate(environment)?.as_truthy()? {
         if value {
-            return consequence.evaluate();
+            return consequence.evaluate(environment);
         }
 
         if let Some(alternative) = alternative {
-            return alternative.evaluate();
+            return alternative.evaluate(environment);
         }
 
         return Ok(Object::None);

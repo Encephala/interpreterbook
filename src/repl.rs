@@ -1,11 +1,13 @@
 use std::io::{stdin, stdout, Write};
 
 use super::parser::Parser;
-use super::evaluate::AstNode;
+use super::evaluate::{AstNode, ExecutionEnvironment};
 
 pub fn start() {
     let stdin = stdin();
     let mut stdout = stdout();
+
+    let mut environment = ExecutionEnvironment::new();
 
     loop {
         print!(">> ");
@@ -26,12 +28,14 @@ pub fn start() {
 
         let program = Parser::new(&input).parse_program();
 
+        let mut environment = ExecutionEnvironment::new();
+
         if !program.errors.is_empty() {
             println!("Error(s) while parsing: {:?}", program.errors);
             continue;
         }
 
-        let result = program.evaluate();
+        let result = program.evaluate(&mut environment);
 
         if let Err(message) = result {
             println!("Error while executing: {:?}", message);

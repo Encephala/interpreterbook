@@ -1,14 +1,16 @@
 use super::super::parser::Parser;
-
-use super::{AstNode, Object};
+use super::{AstNode, Object, ExecutionEnvironment};
 
 fn evaluate(input: &str) -> Result<Object, String> {
     let program = Parser::new(input).parse_program();
 
-    dbg!(&program.errors);
-    assert!(program.errors.is_empty());
+    let mut environment = ExecutionEnvironment::new();
 
-    return program.evaluate();
+    if !program.errors.is_empty() {
+        panic!("Got errors while executing program: {:?}", program.errors);
+    }
+
+    return program.evaluate(&mut environment);
 }
 
 #[test]
@@ -90,8 +92,9 @@ fn prefix_operator_minus_error_for_incompatible_types() {
     ].iter().for_each(|input| {
         let result = evaluate(input);
 
-        dbg!(&result);
-        assert!(result.is_err());
+        if !result.is_err() {
+            panic!("Didn't get error as expected, got {:?}", result);
+        }
     });
 }
 

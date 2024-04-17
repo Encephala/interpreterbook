@@ -92,11 +92,11 @@ impl AstNode for Program {
 
         for statement in self.statements.iter() {
             result = statement.evaluate(environment)?;
+        }
 
-            // Early return, destructuring the Return object
-            if let Object::Return(value) = result {
-                return Ok(*value);
-            }
+        // Destructure the final result if it's a Return
+        if let Object::Return(value) = result {
+            return Ok(*value);
         }
 
         return Ok(result);

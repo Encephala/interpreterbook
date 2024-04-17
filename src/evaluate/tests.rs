@@ -153,9 +153,10 @@ fn return_statement() {
     struct TestCase<'a>(&'a str, isize);
 
     let inputs = [
-        TestCase("return 10", 10),
-        TestCase("return 2 * 5; 9", 10),
-        TestCase("1; return 2; 3", 2)
+        TestCase("{return 10}", 10),
+        TestCase("{return 2 * 5; 9}", 10),
+        TestCase("{1; return 2; 3}", 2),
+        TestCase("1; return 2; 3", 3), // No early returns out of the whole program
     ];
 
     inputs.iter().for_each(|test_case| {
@@ -167,11 +168,16 @@ fn return_statement() {
 
 #[test]
 fn nested_returns() {
-    let input = "{ { return 10 } return 1 }";
+    let inputs = [
+        "{ { return 10 } return 1 };",
+        "{ { return 10 } return 1 }; 5;"
+    ];
 
-    let result = evaluate(input).unwrap();
+    let expected_results = [10, 5];
 
-    assert_eq!(result, Object::Int(10));
+    inputs.iter().zip(expected_results).for_each(|(input, result)| {
+        assert_eq!(evaluate(input).unwrap(), Object::Int(result));
+    });
 }
 
 #[test]

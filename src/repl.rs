@@ -1,7 +1,7 @@
 use std::io::{stdin, stdout, Write};
 
 use super::parser::Parser;
-use super::evaluate::{AstNode, ExecutionEnvironment};
+use super::evaluate::{Object, AstNode, ExecutionEnvironment};
 
 pub fn start() {
     let stdin = stdin();
@@ -40,11 +40,13 @@ pub fn start() {
 
         let result = program.evaluate(&mut environment);
 
-        if let Err(message) = result {
-            println!("Error while executing: {:?}", message);
-            continue;
+        match result {
+            Ok(value) => {
+                if value != Object::None {
+                    println!("{value}")
+                }
+            },
+            Err(message) => println!("Error while executing: {:?}", message),
         }
-
-        println!("{}", result.unwrap());
     }
 }

@@ -13,7 +13,7 @@ pub struct Program {
 }
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     Let { name: String, value: Box<Expression> },
     Return { value: Box<Expression> },
@@ -21,7 +21,7 @@ pub enum Statement {
 }
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Empty,
     Ident(String),
@@ -47,7 +47,7 @@ impl From<&Token> for String {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum PrefixOperator {
     Minus,
     Bang,
@@ -63,7 +63,7 @@ impl From<&Token> for PrefixOperator {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum InfixOperator {
     Plus,
     Minus,
@@ -372,12 +372,16 @@ impl<'a> Parser<'a> {
 
         let consequence = self.parse_block_expression()?;
 
+        self.next_token();
+
         let mut alternative = None;
 
         if self.token == Token::Else {
             self.next_token();
 
             alternative = Some(self.parse_block_expression()?);
+
+            self.next_token();
         }
 
         return Ok(Expression::If { condition, consequence, alternative }.into())
@@ -394,7 +398,9 @@ impl<'a> Parser<'a> {
             result.push(statement);
         }
 
-        self.check_and_skip(&Token::RBrace)?;
+        if self.token != Token::RBrace {
+            return Err(format!("Expected token {:?}, found {:?}", Token::RBrace, &self.token));
+        }
 
         return Ok(Expression::Block(result).into());
     }

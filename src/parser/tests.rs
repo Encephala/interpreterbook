@@ -459,3 +459,34 @@ fn call_expressions() {
         panic!("Expression not a Call expression");
     }
 }
+
+#[test]
+fn anonymous_call_expression() {
+    use Expression::*;
+
+    let input = "fn(x) { x; }(5)";
+
+    let program = parse_then_check_errors_and_length(input, 1);
+
+    let statement = program.first_statement();
+
+    let value = check_and_destruct_expression_statement(statement);
+
+    if let CallExpression { function, arguments } = value {
+        if let Function { parameters, body } = function.as_ref() {
+            assert_eq!(*parameters, vec!["x".to_string()]);
+
+            assert_eq!(**body, Block(vec![
+                Statement::ExpressionStatement { value: Ident("x".into()).into() }
+            ]));
+        } else {
+            panic!("Expression wasn't a Function expression");
+        }
+
+        assert_eq!(*arguments, vec![
+            Int(5)
+        ]);
+    } else {
+        panic!("Expression wasn't a Call expression");
+    }
+}

@@ -339,6 +339,32 @@ fn if_expression() {
 }
 
 #[test]
+fn nested_if_expression() {
+    let input = "if (true) { if (false) { 1 }}";
+
+    let program = parse_then_check_errors_and_length(input, 1);
+
+    let statement = program.first_statement();
+
+    let value = check_and_destruct_expression_statement(statement);
+
+    assert_eq!(
+        *value,
+        Expression::If {
+            condition: Expression::Bool(true).into(),
+            consequence: Expression::Block(vec![Statement::ExpressionStatement { value: Expression::If {
+                condition: Expression::Bool(false).into(),
+                consequence: Expression::Block(vec![
+                        Statement::ExpressionStatement { value : Expression::Int(1).into() }
+                    ]).into(),
+                alternative: None
+            }.into()}]).into(),
+            alternative: None
+        }
+    );
+}
+
+#[test]
 fn if_else_expression() {
     use Expression::*;
 

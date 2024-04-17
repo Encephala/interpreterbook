@@ -372,16 +372,13 @@ impl<'a> Parser<'a> {
 
         let consequence = self.parse_block_expression()?;
 
-        self.next_token();
-
         let mut alternative = None;
 
-        if self.token == Token::Else {
-            self.next_token();
+        if self.next_token == Token::Else {
+            self.next_token(); // Right brace
+            self.next_token(); // Else keyword
 
             alternative = Some(self.parse_block_expression()?);
-
-            self.next_token();
         }
 
         return Ok(Expression::If { condition, consequence, alternative }.into())

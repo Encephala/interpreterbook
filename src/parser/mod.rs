@@ -290,15 +290,15 @@ impl<'a> Parser<'a> {
         use Token::*;
 
         let result = match &self.token {
-            Ident(name) => Ok(Box::new(Expression::Ident(name.clone()))),
-            Int(value) => Ok(Box::new(Expression::Int(value.parse().unwrap()))),
-            True | False => Ok(Box::new(Expression::Bool(self.token == True))),
+            Ident(name) => Ok(Expression::Ident(name.clone()).into()),
+            Int(value) => Ok(Expression::Int(value.parse().unwrap()).into()),
+            True | False => Ok(Expression::Bool(self.token == True).into()),
             Bang => self.parse_prefix_expression(),
             Minus => self.parse_prefix_expression(),
             LParen => self.parse_grouped_expression(),
             If => self.parse_if_expression(),
             Function => self.parse_function_literal(),
-            Semicolon => Ok(Box::new(Expression::Empty)), // If statement starts with semicolon, it is an empty statement
+            Semicolon => Ok(Expression::Empty.into()), // If statement starts with semicolon, it is an empty statement
             _ => Err(format!("No prefix parser found for {:?}", self.token))
         };
 
@@ -311,10 +311,10 @@ impl<'a> Parser<'a> {
         // Skip past the operator itself
         self.next_token();
 
-        return Ok(Box::new(Expression::PrefixExpression {
+        return Ok(Expression::PrefixExpression {
             operator,
             right: self.parse_expression(&Precedence::Prefix)?
-        }));
+        }.into());
     }
 
     fn parse_infix(&mut self, left: Box<Expression>) -> Result<Box<Expression>, String> {
@@ -343,10 +343,10 @@ impl<'a> Parser<'a> {
 
         self.next_token();
 
-        return Ok(Box::new(Expression::InfixExpression { left,
+        return Ok(Expression::InfixExpression { left,
             operator,
             right: self.parse_expression(&precedence)?
-        }));
+        }.into());
     }
 
     fn parse_grouped_expression(&mut self) -> Result<Box<Expression>, String> {
@@ -392,7 +392,7 @@ impl<'a> Parser<'a> {
             self.check_and_skip(&Token::RBrace)?;
         }
 
-        return Ok(Box::new(Expression::If { condition, consequence, alternative }))
+        return Ok(Expression::If { condition, consequence, alternative }.into())
     }
 
     fn parse_block_statement(&mut self) -> Result<BlockStatement, String> {
@@ -422,7 +422,7 @@ impl<'a> Parser<'a> {
 
         self.check_and_skip(&Token::RBrace)?;
 
-        return Ok(Box::new(Expression::Function { parameters, body }));
+        return Ok(Expression::Function { parameters, body }.into());
     }
 
     fn parse_function_parameters(&mut self) -> Result<Vec<String>, String> {
@@ -456,7 +456,7 @@ impl<'a> Parser<'a> {
             return Err(format!("Expected token {:?}, found {:?}", Token::RParen, self.token));
         }
 
-        return Ok(Box::new(Expression::CallExpression { function: left, arguments }))
+        return Ok(Expression::CallExpression { function: left, arguments }.into())
     }
 
     fn parse_call_arguments(&mut self) -> Result<Vec<Expression>, String> {

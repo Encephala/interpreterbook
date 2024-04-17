@@ -145,7 +145,7 @@ fn prefix_operators() {
         TestCase("-15;", PrefixOperator::Minus, Expression::Int(15)),
         TestCase("!!false;", PrefixOperator::Bang, Expression::PrefixExpression {
             operator: PrefixOperator::Bang,
-            right: Box::new(Expression::Bool(false)),
+            right: Expression::Bool(false).into(),
         })
     ];
 
@@ -170,14 +170,14 @@ fn infix_operators_integer_literals() {
     struct TestCase<'a>(&'a str, Box<Expression>, InfixOperator, Box<Expression>);
 
     let inputs = [
-        TestCase("5 + 5;", Box::new(Expression::Int(5)), InfixOperator::Plus, Box::new(Expression::Int(5))),
-        TestCase("5 - 5;", Box::new(Expression::Int(5)), InfixOperator::Minus, Box::new(Expression::Int(5))),
-        TestCase("5 * 5;", Box::new(Expression::Int(5)), InfixOperator::Multiply, Box::new(Expression::Int(5))),
-        TestCase("5 / 5;", Box::new(Expression::Int(5)), InfixOperator::Divide, Box::new(Expression::Int(5))),
-        TestCase("5 > 5;", Box::new(Expression::Int(5)), InfixOperator::GreaterThan, Box::new(Expression::Int(5))),
-        TestCase("5 < 5;", Box::new(Expression::Int(5)), InfixOperator::LessThan, Box::new(Expression::Int(5))),
-        TestCase("5 == 5;", Box::new(Expression::Int(5)), InfixOperator::Equals, Box::new(Expression::Int(5))),
-        TestCase("5 != 5;", Box::new(Expression::Int(5)), InfixOperator::NotEquals, Box::new(Expression::Int(5))),
+        TestCase("5 + 5;", Expression::Int(5).into(), InfixOperator::Plus, Expression::Int(5).into()),
+        TestCase("5 - 5;", Expression::Int(5).into(), InfixOperator::Minus, Expression::Int(5).into()),
+        TestCase("5 * 5;", Expression::Int(5).into(), InfixOperator::Multiply, Expression::Int(5).into()),
+        TestCase("5 / 5;", Expression::Int(5).into(), InfixOperator::Divide, Expression::Int(5).into()),
+        TestCase("5 > 5;", Expression::Int(5).into(), InfixOperator::GreaterThan, Expression::Int(5).into()),
+        TestCase("5 < 5;", Expression::Int(5).into(), InfixOperator::LessThan, Expression::Int(5).into()),
+        TestCase("5 == 5;", Expression::Int(5).into(), InfixOperator::Equals, Expression::Int(5).into()),
+        TestCase("5 != 5;", Expression::Int(5).into(), InfixOperator::NotEquals, Expression::Int(5).into()),
     ];
 
     inputs.iter().for_each(|test_case| {
@@ -205,83 +205,83 @@ fn infix_operators_correct_precedence() {
 
     [
         TestCase("-a * b", InfixExpression {
-            left: Box::new(PrefixExpression {
+            left: PrefixExpression {
                 operator: PrefixOperator::Minus,
-                right: Box::new(Ident("a".into()))
-            }),
+                right: Ident("a".into()).into(),
+            }.into(),
             operator: InfixOperator::Multiply,
-            right: Box::new(Ident("b".into()))
+            right: Ident("b".into()).into()
         }),
 
         TestCase("a * b + c", InfixExpression {
-            left: Box::new(InfixExpression {
-                left: Box::new(Ident("a".into())),
+            left: InfixExpression {
+                left: Ident("a".into()).into(),
                 operator: InfixOperator::Multiply,
-                right: Box::new(Ident("b".into()))
-            }),
+                right: Ident("b".into()).into()
+            }.into(),
             operator: InfixOperator::Plus,
-            right: Box::new(Ident("c".into()))
+            right: Ident("c".into()).into()
         }),
 
         TestCase("a + b * c", InfixExpression {
-            left: Box::new(Ident("a".into())),
+            left: Ident("a".into()).into(),
             operator: InfixOperator::Plus,
-            right: Box::new(InfixExpression {
-                left: Box::new(Ident("b".into())),
+            right: InfixExpression {
+                left: Ident("b".into()).into(),
                 operator: InfixOperator::Multiply,
-                right: Box::new(Ident("c".into()))
-            })
+                right: Ident("c".into()).into()
+            }.into()
         }),
 
         TestCase("add(a + b * c) + d", InfixExpression {
-            left: Box::new(CallExpression {
-                function: Box::new(Expression::Ident("add".into())),
+            left: CallExpression {
+                function: Expression::Ident("add".into()).into(),
                 arguments: vec![InfixExpression {
-                    left: Box::new(Ident("a".into())),
+                    left: Ident("a".into()).into(),
                     operator: InfixOperator::Plus,
-                    right: Box::new(InfixExpression {
-                        left: Box::new(Ident("b".into())),
+                    right: InfixExpression {
+                        left: Ident("b".into()).into(),
                         operator: InfixOperator::Multiply,
-                        right: Box::new(Ident("c".into()))
-                    })
+                        right: Ident("c".into()).into(),
+                    }.into(),
                 }]
-            }),
+            }.into(),
             operator: InfixOperator::Plus,
-            right: Box::new(Ident("d".into()))
+            right: Ident("d".into()).into()
         }),
 
         TestCase("5 < 4 != 3 > 4", InfixExpression {
-            left: Box::new(InfixExpression {
-                left: Box::new(Int(5)),
+            left: InfixExpression {
+                left: Int(5).into(),
                 operator: InfixOperator::LessThan,
-                right: Box::new(Int(4))
-            }),
+                right: Int(4).into()
+            }.into(),
             operator: InfixOperator::NotEquals,
-            right: Box::new(InfixExpression {
-                left: Box::new(Int(3)),
+            right: InfixExpression {
+                left: Int(3).into(),
                 operator: InfixOperator::GreaterThan,
-                right: Box::new(Int(4))
-            })
+                right: Int(4).into()
+            }.into()
         }),
 
         TestCase("3 < 5 == true", InfixExpression {
-            left: Box::new(InfixExpression {
-                left: Box::new(Int(3)),
+            left: InfixExpression {
+                left: Int(3).into(),
                 operator: InfixOperator::LessThan,
-                right: Box::new(Int(5))
-            }),
+                right: Int(5).into(),
+            }.into(),
             operator: InfixOperator::Equals,
-            right: Box::new(Bool(true))
+            right: Bool(true).into()
         }),
 
         TestCase("(5 + 6) * 2", InfixExpression {
-            left: Box::new(InfixExpression {
-                left: Box::new(Int(5)),
+            left: InfixExpression {
+                left: Int(5).into(),
                 operator: InfixOperator::Plus,
-                right: Box::new(Int(6))
-            }),
+                right: Int(6).into(),
+            }.into(),
             operator: InfixOperator::Multiply,
-            right: Box::new(Int(2))
+            right: Int(2).into(),
         }),
     ].iter().for_each(|test_case| {
         let program = parse_then_check_errors_and_length(test_case.0, 1);
@@ -301,8 +301,8 @@ fn boolean_expression() {
     let program = parse_then_check_errors_and_length(input, 2);
 
     assert_eq!(program.statements, vec![
-        Statement::ExpressionStatement { value: Box::new(Expression::Bool(true)) },
-        Statement::ExpressionStatement { value: Box::new(Expression::Bool(false)) },
+        Statement::ExpressionStatement { value: Expression::Bool(true).into() },
+        Statement::ExpressionStatement { value: Expression::Bool(false).into() },
     ]);
 }
 
@@ -320,14 +320,14 @@ fn if_expression() {
 
     if let If { condition, consequence, alternative } = value {
         assert_eq!(**condition, InfixExpression {
-            left: Box::new(Ident("x".into())),
+            left: Ident("x".into()).into(),
             operator: InfixOperator::LessThan,
-            right: Box::new(Ident("y".into()))
+            right: Ident("y".into()).into(),
         });
 
         if let BlockStatement { statements } = consequence {
             assert_eq!(statements.len(), 1);
-            assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Box::new(Ident("x".into())) });
+            assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Ident("x".into()).into() });
         } else {
             panic!("Consequence not a BlockStatement");
         }
@@ -352,19 +352,19 @@ fn if_else_expression() {
 
     if let If { condition, consequence, alternative } = value {
         assert_eq!(**condition, InfixExpression {
-            left: Box::new(Ident("x".into())),
+            left: Ident("x".into()).into(),
             operator: InfixOperator::LessThan,
-            right: Box::new(Ident("y".into()))
+            right: Ident("y".into()).into(),
         });
 
         let BlockStatement { statements } = consequence;
 
         assert_eq!(statements.len(), 1);
-        assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Box::new(Ident("x".into())) });
+        assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Ident("x".into()).into() });
 
         if let Some(BlockStatement { statements }) = alternative {
             assert_eq!(statements.len(), 1);
-            assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Box::new(Ident("y".into())) });
+            assert_eq!(*statements.first().unwrap(), Statement::ExpressionStatement { value: Ident("y".into()).into() });
         } else {
             panic!("Alternative not a BlockStatement");
         }
@@ -415,11 +415,11 @@ fn function_literal() {
         assert_eq!(*parameters, vec!["x".to_string(), "y".to_string()]);
         assert_eq!(*body, BlockStatement {
             statements: vec![
-                Statement::ExpressionStatement { value: Box::new(Expression::InfixExpression {
-                    left: Box::new(Ident("x".into())),
+                Statement::ExpressionStatement { value: Expression::InfixExpression {
+                    left: Ident("x".into()).into(),
                     operator: InfixOperator::Plus,
-                    right: Box::new(Ident("y".into()))
-                })}
+                    right: Ident("y".into()).into(),
+                }.into()}
             ]
             });
     } else {
@@ -448,8 +448,8 @@ fn call_expressions() {
 
         assert_eq!(*arguments, vec![
             Int(1),
-            InfixExpression { left: Box::new(Int(2)), operator: InfixOperator::Multiply, right: Box::new(Int(3)) },
-            InfixExpression { left: Box::new(Int(4)), operator: InfixOperator::Plus, right: Box::new(Int(5)) }
+            InfixExpression { left: Int(2).into(), operator: InfixOperator::Multiply, right: Int(3).into() },
+            InfixExpression { left: Int(4).into(), operator: InfixOperator::Plus, right: Int(5).into() }
         ])
     } else {
         panic!("Expression not a Call expression");

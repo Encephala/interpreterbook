@@ -60,7 +60,7 @@ fn evaluate_let_statement(name: &str, value: &Expression) -> Result<Object, Stri
 }
 
 fn evaluate_return_statement(value: &Expression) -> Result<Object, String> {
-    return Ok(Object::Return(Box::new(value.evaluate()?)));
+    return Ok(Object::Return(value.evaluate()?.into()));
 }
 
 impl AstNode for Program {

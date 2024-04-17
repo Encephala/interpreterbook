@@ -241,3 +241,13 @@ fn function_call() {
         assert_eq!(result, Object::Int(test_case.1));
     })
 }
+
+// Return statements shouldn't bubble up out of function calls
+#[test]
+fn function_return_bubbling() {
+    let input = "let double = fn(x) { return x * 2 }; { double(1) + 1 }";
+
+    let result = evaluate(input).unwrap();
+
+    assert_eq!(result, Object::Int(3));
+}

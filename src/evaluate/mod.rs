@@ -282,7 +282,14 @@ fn evaluate_function_call(function: &Expression,
             environment.insert(parameter.into(), argument);
         });
 
-        return body.evaluate(&mut environment);
+        let result = body.evaluate(&mut environment)?;
+
+        // Destructure value if it's a Return
+        if let Object::Return(value) = result {
+            return Ok(*value);
+        }
+
+        return Ok(result);
     } else {
         panic!("I did the stupid again");
     }

@@ -23,6 +23,7 @@ pub enum Statement {
 
 #[derive(Debug, PartialEq)]
 pub enum Expression {
+    Empty,
     Ident(String),
     Int(usize),
     Bool(bool),
@@ -297,6 +298,7 @@ impl<'a> Parser<'a> {
             LParen => self.parse_grouped_expression(),
             If => self.parse_if_expression(),
             Function => self.parse_function_literal(),
+            Semicolon => Ok(Box::new(Expression::Empty)), // If statement starts with semicolon, it is an empty statement
             _ => Err(format!("No prefix parser found for {:?}", self.token))
         };
 

@@ -98,6 +98,7 @@ fn evaluate_statements(statements: &Vec<Statement>) -> Result<Object, String> {
 impl AstNode for Expression {
     fn evaluate(&self) -> Result<Object, String> {
         match &self{
+            Expression::Empty => Ok(Object::None),
             Expression::Ident(_) => todo!(),
             Expression::Int(value) => Ok(Int(*value as isize)),
             Expression::Bool(value) => Ok(Bool(*value)),

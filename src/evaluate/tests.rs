@@ -124,6 +124,15 @@ fn conditional_expression() {
 }
 
 #[test]
+fn empty_program_returns_null() {
+    let input = ";";
+
+    let result = evaluate(input).unwrap();
+
+    assert_eq!(result, Object::None);
+}
+
+#[test]
 fn return_statement() {
     struct TestCase<'a>(&'a str, isize);
 

@@ -174,7 +174,7 @@ fn evaluate_infix_boolean(left: bool, operator: &InfixOperator, right: bool) -> 
     }
 }
 
-fn evaluate_conditional_expression(condition: &Expression, consequence: &Box<Expression>, alternative: &Option<Box<Expression>>) -> Result<Object, String> {
+fn evaluate_conditional_expression(condition: &Expression, consequence: &Expression, alternative: &Option<Box<Expression>>) -> Result<Object, String> {
     if let Bool(value) = condition.evaluate()?.as_truthy()? {
         if value {
             return consequence.evaluate();

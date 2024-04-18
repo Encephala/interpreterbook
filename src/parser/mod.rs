@@ -298,7 +298,9 @@ impl<'a> Parser<'a> {
             Function => self.parse_function_literal(),
             Semicolon => Ok(Expression::Empty.into()), // If statement starts with semicolon, it is an empty statement
             LBrace => self.parse_block_expression(),
-            LSqBracket => self.parse_array(),
+            LSqBracket => self.parse_expression_list(Token::RSqBracket).map(|expressions| {
+                Expression::Array(expressions).into()
+            }),
             _ => Err(format!("No prefix parser found for {:?}", self.token))
         };
 
@@ -406,30 +408,6 @@ impl<'a> Parser<'a> {
         return Ok(Expression::Block(result).into());
     }
 
-    fn parse_array(&mut self) -> Result<Box<Expression>, String> {
-        self.next_token();
-
-        let mut result = Vec::new();
-
-        // If not empty array
-        if self.token != Token::RSqBracket {
-            while self.next_token == Token::Comma {
-                result.push(*self.parse_expression(&Precedence::Lowest)?);
-
-                self.next_token();
-                self.next_token();
-            }
-
-            result.push(*self.parse_expression(&Precedence::Lowest)?);
-
-            self.next_token();
-        }
-
-        self.check_and_skip(&Token::RSqBracket)?;
-
-        return Ok(Expression::Array(result).into());
-    }
-
     fn parse_function_literal(&mut self) -> Result<Box<Expression>, String> {
         self.next_token();
 
@@ -467,34 +445,33 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_call_expression(&mut self, left: Box<Expression>) -> Result<Box<Expression>, String> {
-        self.next_token();
-
-        let arguments = self.parse_call_arguments()?;
-
-        if self.token != Token::RParen {
-            return Err(format!("Expected token {:?}, found {:?}", Token::RParen, self.token));
-        }
+        let arguments = self.parse_expression_list(Token::RParen)?;
 
         return Ok(Expression::CallExpression { function: left, arguments }.into())
     }
 
-    fn parse_call_arguments(&mut self) -> Result<Vec<Expression>, String> {
+    fn parse_expression_list(&mut self, end: Token) -> Result<Vec<Expression>, String> {
+        self.next_token();
+
         let mut result = vec![];
 
-        if self.token == Token::RParen {
+        if self.token == end {
             return Ok(result)
         }
 
         result.push(*self.parse_expression(&Precedence::Lowest)?);
 
-        self.next_token();
-
-        while self.token == Token::Comma {
+        while self.next_token == Token::Comma {
+            self.next_token();
             self.next_token();
 
             result.push(*self.parse_expression(&Precedence::Lowest)?);
+        }
 
-            self.next_token();
+        self.next_token();
+
+        if self.token != end {
+            return Err(format!("Expected token {:?}, found {:?}", Token::RParen, self.token));
         }
 
         return Ok(result);

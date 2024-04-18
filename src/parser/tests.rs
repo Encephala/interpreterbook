@@ -137,6 +137,19 @@ fn integer_expression() {
 }
 
 #[test]
+fn string_expression() {
+    let input = "'hello world'";
+
+    let program = parse_then_check_errors_and_length(input, 1);
+
+    let statement = program.first_statement();
+
+    let value = check_and_destruct_expression_statement(statement);
+
+    assert_eq!(*value, Expression::Str("hello world".into()));
+}
+
+#[test]
 fn prefix_operators() {
     struct TestCase<'a>(&'a str, PrefixOperator, Expression);
 

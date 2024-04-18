@@ -9,6 +9,7 @@ mod tests;
 pub enum Object {
     Int(isize),
     Bool(bool),
+    Str(String),
     Return(Box<Object>),
     Function{ parameters: Vec<String>, body: Box<Expression>, environment: ExecutionEnvironment },
     None,
@@ -38,6 +39,7 @@ impl std::fmt::Display for Object {
         match &self {
             Int(value) => write!(f, "{value}"),
             Bool(value) => write!(f, "{value}"),
+            Str(value) => f.write_str(value),
             Return(value) => write!(f, "{value}"),
             Function{ parameters, body, environment} => write!(
                 f,
@@ -113,6 +115,7 @@ impl AstNode for Expression {
                     .ok_or(format!("Variable {name} doesn't exist"))
             },
             Expression::Int(value) => Ok(Int(*value as isize)),
+            Expression::Str(value) => Ok(Str(value.clone())),
             Expression::Bool(value) => Ok(Bool(*value)),
             Expression::Block(statements) => evaluate_block_expression(statements, environment),
             Expression::PrefixExpression { operator, right } => {

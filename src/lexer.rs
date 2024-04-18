@@ -4,6 +4,7 @@ use std::str;
 pub enum Token {
     Ident(String),
     Int(String),
+    Str(String),
 
     Illegal,
     Eof,
@@ -22,6 +23,7 @@ pub enum Token {
 
     Comma,
     Semicolon,
+    Apostrophe,
 
     LParen,
     RParen,
@@ -112,6 +114,24 @@ impl<'a> Lexer<'a> {
         return Int(str::from_utf8(&self.input[start_index..self.index]).unwrap().into());
     }
 
+    fn read_string(&mut self) -> Token {
+        // Skip apostrophe
+        self.read_char();
+
+        let start_index = self.index;
+
+        while self.char != b'"' && self.char != b'\'' {
+            self.read_char()
+        }
+
+        let result = str::from_utf8(&self.input[start_index..self.index]).unwrap().into();
+
+        // Skip apostrophe
+        self.read_char();
+
+        return Str(result);
+    }
+
     fn skip_whitespace(&mut self) {
         while self.char.is_ascii_whitespace() {
             self.read_char();
@@ -148,6 +168,7 @@ impl<'a> Lexer<'a> {
             b'>' => GreaterThan,
             b',' => Comma,
             b';' => Semicolon,
+            b'"' | b'\'' => return self.read_string(),
             b'(' => LParen,
             b')' => RParen,
             b'{' => LBrace,
@@ -217,7 +238,9 @@ mod tests {
             x + y;
         };
 
-        let result = add(five, ten);";
+        let result = add(five, ten);
+
+        'epic_string';";
 
         let mut lexer = Lexer::new(input);
 
@@ -259,6 +282,8 @@ mod tests {
             Comma,
             Ident("ten".into()),
             RParen,
+            Semicolon,
+            Str("epic_string".into()),
             Semicolon,
             Eof,
         ];

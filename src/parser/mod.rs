@@ -26,6 +26,7 @@ pub enum Expression {
     Empty,
     Ident(String),
     Int(usize),
+    Str(String),
     Bool(bool),
     Block(Vec<Statement>),
     PrefixExpression { operator: PrefixOperator, right: Box<Expression> },
@@ -287,6 +288,7 @@ impl<'a> Parser<'a> {
         let result = match &self.token {
             Ident(name) => Ok(Expression::Ident(name.clone()).into()),
             Int(value) => Ok(Expression::Int(value.parse().unwrap()).into()),
+            Str(value) => Ok(Expression::Str(value.clone()).into()),
             True | False => Ok(Expression::Bool(self.token == True).into()),
             Bang => self.parse_prefix_expression(),
             Minus => self.parse_prefix_expression(),

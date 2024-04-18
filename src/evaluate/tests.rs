@@ -39,6 +39,15 @@ fn integer_expression() {
 }
 
 #[test]
+fn string_expression() {
+    let input = "'hello world';";
+
+    let result = evaluate(input).unwrap();
+
+    assert_eq!(result, Object::Str("hello world".into()));
+}
+
+#[test]
 fn boolean_expressions() {
     struct TestCase<'a>(&'a str, bool);
 

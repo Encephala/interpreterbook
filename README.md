@@ -8,3 +8,7 @@ Some ideas for future me:
 - Let every block expression have its own scope rather than just functions
 - Is it possible/feasible to check for existence of variables used in function when it is defined, rather than when
 it is executed?
+- GC?
+- Error handling in lexer
+    - No closing apostrophe for Str
+- Don't allow a variable being set to Null

@@ -1,6 +1,12 @@
 use super::super::parser::Parser;
 use super::{AstNode, Object, Statement, Expression, InfixOperator, ExecutionEnvironment};
 
+macro_rules! test_case {
+    ($type:ty) => {
+        struct TestCase<'a>(&'a str, $type);
+    };
+}
+
 fn evaluate(input: &str) -> Result<Object, String> {
     let program = Parser::new(input).parse_program();
 
@@ -15,7 +21,7 @@ fn evaluate(input: &str) -> Result<Object, String> {
 
 #[test]
 fn integer_expression() {
-    struct TestCase<'a>(&'a str, isize);
+    test_case!(isize);
 
     let inputs = [
         TestCase("5", 5),
@@ -49,7 +55,7 @@ fn string_expression() {
 
 #[test]
 fn boolean_expressions() {
-    struct TestCase<'a>(&'a str, bool);
+    test_case!(bool);
 
     let inputs = [
         TestCase("true", true),
@@ -73,7 +79,7 @@ fn boolean_expressions() {
 
 #[test]
 fn bang_operator() {
-    struct TestCase<'a>(&'a str, bool);
+    test_case!(bool);
 
     let inputs = [
         TestCase("!true", false),
@@ -120,7 +126,7 @@ fn infix_operator_integer_error_for_incompatible_types() {
 
 #[test]
 fn string_operators() {
-    struct TestCase<'a>(&'a str, Object);
+    test_case!(Object);
 
     let inputs = [
         TestCase("'hello' + 'world'", Object::Str("helloworld".into())),
@@ -140,7 +146,7 @@ fn string_operators() {
 fn conditional_expression() {
     use Object::*;
 
-    struct TestCase<'a>(&'a str, Object);
+    test_case!(Object);
 
     let inputs = [
         TestCase("if (true) { 10 }", Int(10)),
@@ -177,7 +183,7 @@ fn empty_block_statement_returns_none() {
 
 #[test]
 fn return_statement() {
-    struct TestCase<'a>(&'a str, isize);
+    test_case!(isize);
 
     let inputs = [
         TestCase("{return 10}", 10),
@@ -209,7 +215,7 @@ fn nested_returns() {
 
 #[test]
 fn let_statements() {
-    struct TestCase<'a>(&'a str, isize);
+    test_case!(isize);
 
     let inputs = [
         TestCase("let a = 5; a", 5),
@@ -257,7 +263,7 @@ fn function_literal() {
 
 #[test]
 fn function_call() {
-    struct TestCase<'a>(&'a str, isize);
+    test_case!(isize);
 
     let inputs = [
         TestCase("let identity = fn(x) { x; }; identity(5);", 5),

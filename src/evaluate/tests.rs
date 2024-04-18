@@ -307,3 +307,20 @@ fn function_return_bubbling() {
 
 //     assert_eq!(result, Object::Int(120));
 // }
+
+#[test]
+fn builtin_len() {
+    test_case!(isize);
+
+    let inputs = [
+        TestCase("len('')", 0),
+        TestCase("len('abc')", 3),
+        TestCase("len('a b c')", 5),
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0).unwrap();
+
+        assert_eq!(result, Object::Int(test_case.1));
+    })
+}

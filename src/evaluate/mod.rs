@@ -1,9 +1,13 @@
+mod builtins;
+
 use std::collections::HashMap;
 
 use super::parser::{Statement, Expression, Program, PrefixOperator, InfixOperator};
+use builtins::BuiltinFunction;
 
 #[cfg(test)]
 mod tests;
+
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Object {
@@ -12,6 +16,8 @@ pub enum Object {
     Str(String),
     Return(Box<Object>),
     Function{ parameters: Vec<String>, body: Box<Expression>, environment: ExecutionEnvironment },
+    Builtin(BuiltinFunction),
+    Tuple(Vec<Object>),
     None,
 }
 
@@ -43,7 +49,16 @@ impl std::fmt::Display for Object {
             Return(value) => write!(f, "{value}"),
             Function{ parameters, body, environment} => write!(
                 f,
-                "fn({parameters:?}) {{{body:?}}} with env {environment:?}"
+                "fn({parameters:?}) {body:?} with env {environment:?}"
+            ),
+            Builtin(builtin) => write!(
+                f,
+                "Builtin {builtin}"
+            ),
+            Tuple(values) => write!(
+                f,
+                "({})",
+                values.iter().map(|object| format!("{object}")).collect::<Vec<_>>().join(", ")
             ),
             None => f.write_str("None"),
         }
@@ -51,7 +66,29 @@ impl std::fmt::Display for Object {
 }
 
 
-pub type ExecutionEnvironment = HashMap<String, Object>;
+#[derive(Debug, PartialEq, Clone)]
+pub struct ExecutionEnvironment {
+    variables: HashMap<String, Object>,
+    builtins: HashMap<String, Object>
+}
+
+impl ExecutionEnvironment {
+    pub fn new() -> Self {
+        let mut result = Self { variables: HashMap::new(), builtins: HashMap::new() };
+
+        result.register_builtins();
+
+        return result;
+    }
+
+    pub fn insert(&mut self, key: String, value: Object) {
+        self.variables.insert(key, value);
+    }
+
+    pub fn get(&self, key: &str) -> Option<&Object> {
+        return self.variables.get(key).or(self.builtins.get(key));
+    }
+}
 
 
 pub trait AstNode {
@@ -313,6 +350,8 @@ fn evaluate_function_call(function: &Expression,
         }
 
         return Ok(result);
+    } else if let Object::Builtin(builtin) = function {
+        return builtin.call(arguments);
     } else {
         panic!("I did the stupid again");
     }

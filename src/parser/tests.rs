@@ -152,10 +152,10 @@ fn prefix_operators() {
     struct TestCase<'a>(&'a str, PrefixOperator, Expression);
 
     let inputs = [
-        TestCase("!5;", PrefixOperator::Bang, Expression::Int(5)),
-        TestCase("-15;", PrefixOperator::Minus, Expression::Int(15)),
-        TestCase("!!false;", PrefixOperator::Bang, Expression::PrefixExpression {
-            operator: PrefixOperator::Bang,
+        TestCase("!5;", PrefixOperator::Not, Expression::Int(5)),
+        TestCase("-15;", PrefixOperator::Negate, Expression::Int(15)),
+        TestCase("!!false;", PrefixOperator::Not, Expression::PrefixExpression {
+            operator: PrefixOperator::Not,
             right: Expression::Bool(false).into(),
         })
     ];
@@ -217,7 +217,7 @@ fn infix_operators_correct_precedence() {
     [
         TestCase("-a * b", InfixExpression {
             left: PrefixExpression {
-                operator: PrefixOperator::Minus,
+                operator: PrefixOperator::Negate,
                 right: Ident("a".into()).into(),
             }.into(),
             operator: InfixOperator::Multiply,

@@ -52,15 +52,15 @@ impl From<&Token> for String {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum PrefixOperator {
-    Minus,
-    Bang,
+    Negate,
+    Not,
 }
 
 impl From<&Token> for PrefixOperator {
     fn from(value: &Token) -> Self {
         match value {
-            Token::Bang => PrefixOperator::Bang,
-            Token::Minus => PrefixOperator::Minus,
+            Token::Bang => PrefixOperator::Not,
+            Token::Minus => PrefixOperator::Negate,
             _ => panic!("I did something stupid")
         }
     }

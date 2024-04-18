@@ -215,12 +215,12 @@ fn evaluate_prefix_expression(
     let right = right.evaluate(environment)?;
 
     return match operator {
-        PrefixOperator::Minus => evaluate_prefix_minus(right),
-        PrefixOperator::Bang => evaluate_prefix_bang(right),
+        PrefixOperator::Negate => evaluate_prefix_negate(right),
+        PrefixOperator::Not => evaluate_prefix_not(right),
     };
 }
 
-fn evaluate_prefix_bang(right: Object) -> Result<Object, String> {
+fn evaluate_prefix_not(right: Object) -> Result<Object, String> {
     if let Bool(value) = right.as_truthy()? {
         return Ok(Bool(!value));
     }
@@ -229,7 +229,7 @@ fn evaluate_prefix_bang(right: Object) -> Result<Object, String> {
     panic!("Can I stop being stupid");
 }
 
-fn evaluate_prefix_minus(right: Object) -> Result<Object, String> {
+fn evaluate_prefix_negate(right: Object) -> Result<Object, String> {
     if let Int(value) = right.as_number()? {
         return Ok(Int(-value));
     }

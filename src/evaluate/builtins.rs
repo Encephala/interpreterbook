@@ -32,7 +32,7 @@ impl std::fmt::Display for BuiltinFunction {
 impl ExecutionEnvironment {
     pub fn register_builtins(&mut self) {
         BuiltinFunction::iter().for_each(|builtin| {
-            self.insert(
+            self.builtins.insert(
                 builtin.to_string(),
                 Object::Builtin(builtin)
             );

@@ -324,3 +324,33 @@ fn builtin_len() {
         assert_eq!(result, Object::Int(test_case.1));
     })
 }
+
+#[test]
+fn array() {
+    use Object::*;
+
+    test_case!(Object);
+
+    let inputs = [
+        TestCase("[1, 2];", Array(vec![
+            Int(1), Int(2)
+        ])),
+        TestCase("['hey', 2, fn(x) { return x }];", Array(vec![
+            Str("hey".into()),
+            Int(2),
+            Function {
+                parameters: vec!["x".into()],
+                body: Expression::Block(vec![
+                    Statement::Return{ value: Expression::Ident("x".into()).into() }
+                ]).into(),
+                environment: ExecutionEnvironment::new()
+            }
+        ])),
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0).unwrap();
+
+        assert_eq!(result, test_case.1);
+    });
+}

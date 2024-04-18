@@ -36,7 +36,8 @@ pub enum Expression {
     CallExpression {
         function: Box<Expression>, // Always either Ident or Function
         arguments: Vec<Expression>
-    }
+    },
+    Array(Vec<Expression>),
 }
 
 impl From<&Token> for String {
@@ -297,6 +298,7 @@ impl<'a> Parser<'a> {
             Function => self.parse_function_literal(),
             Semicolon => Ok(Expression::Empty.into()), // If statement starts with semicolon, it is an empty statement
             LBrace => self.parse_block_expression(),
+            LSqBracket => self.parse_array(),
             _ => Err(format!("No prefix parser found for {:?}", self.token))
         };
 
@@ -402,6 +404,30 @@ impl<'a> Parser<'a> {
         }
 
         return Ok(Expression::Block(result).into());
+    }
+
+    fn parse_array(&mut self) -> Result<Box<Expression>, String> {
+        self.next_token();
+
+        let mut result = Vec::new();
+
+        // If not empty array
+        if self.token != Token::RSqBracket {
+            while self.next_token == Token::Comma {
+                result.push(*self.parse_expression(&Precedence::Lowest)?);
+
+                self.next_token();
+                self.next_token();
+            }
+
+            result.push(*self.parse_expression(&Precedence::Lowest)?);
+
+            self.next_token();
+        }
+
+        self.check_and_skip(&Token::RSqBracket)?;
+
+        return Ok(Expression::Array(result).into());
     }
 
     fn parse_function_literal(&mut self) -> Result<Box<Expression>, String> {

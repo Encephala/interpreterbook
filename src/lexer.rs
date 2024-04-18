@@ -29,6 +29,8 @@ pub enum Token {
     RParen,
     LBrace,
     RBrace,
+    LSqBracket,
+    RSqBracket,
 
     Let,
     True,
@@ -173,6 +175,8 @@ impl<'a> Lexer<'a> {
             b')' => RParen,
             b'{' => LBrace,
             b'}' => RBrace,
+            b'[' => LSqBracket,
+            b']' => RSqBracket,
             0 => Eof,
             _ => Illegal
         };
@@ -240,7 +244,9 @@ mod tests {
 
         let result = add(five, ten);
 
-        'epic_string';";
+        'epic_string';
+
+        [1, 2];";
 
         let mut lexer = Lexer::new(input);
 
@@ -284,6 +290,12 @@ mod tests {
             RParen,
             Semicolon,
             Str("epic_string".into()),
+            Semicolon,
+            LSqBracket,
+            Int("1".into()),
+            Comma,
+            Int("2".into()),
+            RSqBracket,
             Semicolon,
             Eof,
         ];

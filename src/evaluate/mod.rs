@@ -17,7 +17,7 @@ pub enum Object {
     Return(Box<Object>),
     Function{ parameters: Vec<String>, body: Box<Expression>, environment: ExecutionEnvironment },
     Builtin(BuiltinFunction),
-    Tuple(Vec<Object>),
+    Array(Vec<Object>),
     None,
 }
 
@@ -55,7 +55,7 @@ impl std::fmt::Display for Object {
                 f,
                 "Builtin {builtin}"
             ),
-            Tuple(values) => write!(
+            Array(values) => write!(
                 f,
                 "({})",
                 values.iter().map(|object| format!("{object}")).collect::<Vec<_>>().join(", ")
@@ -176,7 +176,12 @@ impl AstNode for Expression {
             }),
             Expression::CallExpression {
                 function, arguments
-            } => evaluate_function_call(function, arguments, environment)
+            } => evaluate_function_call(function, arguments, environment),
+            Expression::Array(value) => Ok(Array(
+                value.iter()
+                    .map(|expression| expression.evaluate(environment))
+                    .collect::<Result<Vec<_>, String>>()?
+            )),
         }
     }
 }

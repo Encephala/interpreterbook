@@ -56,6 +56,6 @@ fn len(parameters: Vec<Object>) -> Result<Object, String> {
 
     match result.len() {
         1 => Ok(result.into_iter().next().unwrap()),
-        _ => Ok(Object::Tuple(result)),
+        _ => Ok(Object::Array(result)),
     }
 }

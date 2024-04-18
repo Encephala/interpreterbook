@@ -529,3 +529,23 @@ fn anonymous_call_expression() {
         panic!("Expression wasn't a Call expression");
     }
 }
+
+#[test]
+fn array_expression() {
+    use Expression::*;
+
+    let input = "[1, 2];";
+
+    let program = parse_then_check_errors_and_length(input, 1);
+
+    let statement = program.first_statement();
+
+    let value = check_and_destruct_expression_statement(statement);
+
+    if let Array(value) = value {
+        assert_eq!(*value, vec![
+            Int(1),
+            Int(2)
+        ]);
+    }
+}

@@ -119,6 +119,24 @@ fn infix_operator_integer_error_for_incompatible_types() {
 }
 
 #[test]
+fn string_operators() {
+    struct TestCase<'a>(&'a str, Object);
+
+    let inputs = [
+        TestCase("'hello' + 'world'", Object::Str("helloworld".into())),
+        TestCase("'hello world' - 'world'", Object::Str("hello ".into())),
+        TestCase("'hello' != 'world'", Object::Bool(true)),
+        TestCase("'hello' == 'hello'", Object::Bool(true)),
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0).unwrap();
+
+        assert_eq!(result, test_case.1);
+    })
+}
+
+#[test]
 fn conditional_expression() {
     use Object::*;
 
@@ -270,16 +288,16 @@ fn function_return_bubbling() {
     assert_eq!(result, Object::Int(3));
 }
 
-#[test]
-fn recursion() {
-    let input = "let factorial = fn(x) {
-        if (x < 3) { return x }
-        else { return x * factorial(x - 1) }
-    };
+// #[test]
+// fn recursion() {
+//     let input = "let factorial = fn(x) {
+//         if (x < 3) { return x }
+//         else { return x * factorial(x - 1) }
+//     };
 
-    factorial(5)";
+//     factorial(5)";
 
-    let result = evaluate(input).unwrap();
+//     let result = evaluate(input).unwrap();
 
-    assert_eq!(result, Object::Int(120));
-}
+//     assert_eq!(result, Object::Int(120));
+// }

@@ -212,6 +212,10 @@ fn evaluate_infix(left: &Object, operator: &InfixOperator, right: &Object) -> Re
         return evaluate_infix_boolean(*left, operator, *right);
     }
 
+    if let (Str(left), Str(right)) = (left, right) {
+        return evaluate_infix_string(left, operator, right);
+    }
+
     return Err(format!("Can't apply {:?} to incompatible types {:?} and {:?}", operator, left, right));
 }
 
@@ -238,6 +242,22 @@ fn evaluate_infix_boolean(left: bool, operator: &InfixOperator, right: bool) -> 
         InfixOperator::Equals => Ok(Bool(left == right)),
         InfixOperator::NotEquals => Ok(Bool(left != right)),
         InfixOperator::Divide => Err(format!("Can't apply boolean {:?} to {:?} and {:?}", operator, left, right))
+    }
+}
+
+fn evaluate_infix_string(left: &String, operator: &InfixOperator, right: &String) -> Result<Object, String> {
+    match operator {
+        InfixOperator::Plus => Ok(Str(left.to_owned() + right)),
+        InfixOperator::Minus => {
+            if left.ends_with(right) {
+                Ok(Str(left.chars().take(left.len() - right.len()).collect::<String>()))
+            } else {
+                Err(format!("Left '{left}' doesn't start with right '{right}'"))
+            }
+        },
+        InfixOperator::Equals => Ok(Bool(left == right)),
+        InfixOperator::NotEquals => Ok(Bool(left != right)),
+        _ => Err(format!("Can't apply string {:?} to {left} and {right}", operator)),
     }
 }
 

@@ -12,3 +12,7 @@ it is executed?
 - Error handling in lexer
     - No closing apostrophe for Str
 - Don't allow a variable being set to Null
+- Rework infix operator evaluation to more easily allow operators of different types
+    - Have a function for each operator which matches types, rather than each type combinations which matches operator
+- Implement fuzzy string matching operator?
+    - More of a DSA exercise than a build-an-interpreter exercise

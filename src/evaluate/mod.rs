@@ -358,6 +358,6 @@ fn evaluate_function_call(function: &Expression,
     } else if let Object::Builtin(builtin) = function {
         return builtin.call(arguments);
     } else {
-        panic!("I did the stupid again");
+        return Err(format!("{function:?} isn't a function"));
     }
 }

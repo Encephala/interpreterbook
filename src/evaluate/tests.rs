@@ -284,6 +284,15 @@ fn function_call() {
     })
 }
 
+#[test]
+fn function_call_on_nonfunction_error() {
+    let input = "1(2);";
+
+    let result = evaluate(input);
+
+    assert_eq!(result, Err("Int(1) isn't a function".into()));
+}
+
 // Return statements shouldn't bubble up out of function calls
 #[test]
 fn function_return_bubbling() {

@@ -182,6 +182,11 @@ impl AstNode for Expression {
                     .map(|expression| expression.evaluate(environment))
                     .collect::<Result<Vec<_>, String>>()?
             )),
+            Expression::Index { into, index } => evaluate_infix_index(
+                into,
+                index,
+                environment
+            ),
         }
     }
 }
@@ -262,28 +267,33 @@ fn evaluate_infix(left: &Object, operator: &InfixOperator, right: &Object) -> Re
 }
 
 fn evaluate_infix_integer(left: isize, operator: &InfixOperator, right: isize) -> Result<Object, String> {
+    use InfixOperator::*;
+
     match operator {
-        InfixOperator::Add => Ok(Int(left + right)),
-        InfixOperator::Subtract => Ok(Int(left - right)),
-        InfixOperator::Multiply => Ok(Int(left * right)),
-        InfixOperator::Divide => Ok(Int(left / right)),
-        InfixOperator::GreaterThan => Ok(Bool(left > right)),
-        InfixOperator::LessThan => Ok(Bool(left < right)),
-        InfixOperator::Equals => Ok(Bool(left == right)),
-        InfixOperator::NotEquals => Ok(Bool(left != right))
+        Add => Ok(Int(left + right)),
+        Subtract => Ok(Int(left - right)),
+        Multiply => Ok(Int(left * right)),
+        Divide => Ok(Int(left / right)),
+        GreaterThan => Ok(Bool(left > right)),
+        LessThan => Ok(Bool(left < right)),
+        Equals => Ok(Bool(left == right)),
+        NotEquals => Ok(Bool(left != right)),
+        _ => Err(format!("Invalid operation {left:?} {operator:?} {right:?}")),
     }
 }
 
 fn evaluate_infix_boolean(left: bool, operator: &InfixOperator, right: bool) -> Result<Object, String> {
+    use InfixOperator::*;
+
     match operator {
-        InfixOperator::Add => Ok(Bool(left || right)),
-        InfixOperator::Subtract => Ok(Bool(left && !right)),
-        InfixOperator::Multiply => Ok(Bool(left && right)),
-        InfixOperator::GreaterThan => Ok(Bool(left && !right)),
-        InfixOperator::LessThan => Ok(Bool(!left && right)),
-        InfixOperator::Equals => Ok(Bool(left == right)),
-        InfixOperator::NotEquals => Ok(Bool(left != right)),
-        InfixOperator::Divide => Err(format!("Can't apply boolean {:?} to {:?} and {:?}", operator, left, right))
+        Add => Ok(Bool(left || right)),
+        Subtract => Ok(Bool(left && !right)),
+        Multiply => Ok(Bool(left && right)),
+        GreaterThan => Ok(Bool(left && !right)),
+        LessThan => Ok(Bool(!left && right)),
+        Equals => Ok(Bool(left == right)),
+        NotEquals => Ok(Bool(left != right)),
+        _ => Err(format!("Invalid operation {left:?} {operator:?} {right:?}")),
     }
 }
 
@@ -301,6 +311,26 @@ fn evaluate_infix_string(left: &String, operator: &InfixOperator, right: &String
         InfixOperator::NotEquals => Ok(Bool(left != right)),
         _ => Err(format!("Can't apply string {:?} to {left} and {right}", operator)),
     }
+}
+
+fn evaluate_infix_index(
+    left: &Expression,
+    right: &Expression,
+    environment: &mut ExecutionEnvironment
+) -> Result<Object, String> {
+    if let Object::Array(left) = left.evaluate(environment)? {
+        if let Object::Int(right) = right.evaluate(environment)? {
+            return left.iter()
+                .nth(right as usize)
+                .map(|object| { dbg!(&object); object.to_owned()})
+                .ok_or(format!("Index {right} out of bounds"));
+        } else {
+            return Err(format!("{right:?} is an invalid index"));
+        }
+    } else {
+        return Err(format!("Can't index into {left:?}"));
+    }
+
 }
 
 fn evaluate_conditional_expression(

@@ -363,3 +363,21 @@ fn array() {
         assert_eq!(result, test_case.1);
     });
 }
+
+#[test]
+fn indexing_array() {
+    let input = "[1, 2, 3, 4][2];";
+
+    let result = evaluate(input).unwrap();
+
+    assert_eq!(result, Object::Int(3));
+}
+
+#[test]
+fn indexing_array_out_of_bounds_error() {
+    let input = "[][0]";
+
+    let result = evaluate(input);
+
+    assert_eq!(result, Err("Index 0 out of bounds".into()));
+}

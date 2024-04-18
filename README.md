@@ -21,3 +21,4 @@ it is executed?
     - Have a function for each operator which matches types, rather than each type combinations which matches operator
 - Implement fuzzy string matching operator?
     - More of a DSA exercise than a build-an-interpreter exercise
+- Allow passing multiple indices at once separated by commas

@@ -38,6 +38,7 @@ pub enum Expression {
         arguments: Vec<Expression>
     },
     Array(Vec<Expression>),
+    Index { into: Box<Expression>, index: Box<Expression> },
 }
 
 impl From<&Token> for String {
@@ -74,7 +75,8 @@ pub enum InfixOperator {
     GreaterThan,
     LessThan,
     Equals,
-    NotEquals
+    NotEquals,
+    Index,
 }
 
 impl From<&Token> for InfixOperator {
@@ -88,6 +90,7 @@ impl From<&Token> for InfixOperator {
             Token::LessThan => InfixOperator::LessThan,
             Token::Equals => InfixOperator::Equals,
             Token::NotEquals => InfixOperator::NotEquals,
+            Token::LBracket => InfixOperator::Index,
             _ => panic!("I did something stupid again")
         }
     }
@@ -132,7 +135,8 @@ impl<'a> Parser<'a> {
             (Token::Minus, Precedence::Sum),
             (Token::Slash, Precedence::Product),
             (Token::Asterisk, Precedence::Product),
-            (Token::LParen, Precedence::Call)
+            (Token::LParen, Precedence::Call),
+            (Token::LBracket, Precedence::Call),
         ].iter().for_each(|(token, precedence)| { precedence_map.insert(token, precedence); });
 
         return Self { lexer, token: first_token, next_token: second_token, precedence_map };
@@ -304,12 +308,12 @@ impl<'a> Parser<'a> {
             LParen => self.parse_grouped_expression(),
             If => self.parse_if_expression(),
             Function => self.parse_function_literal(),
-            Semicolon => Ok(Expression::Empty.into()), // If statement starts with semicolon, it is an empty statement
+            Semicolon => Ok(Expression::Empty.into()), // When statement starts with semicolon, it is an empty statement
             LBrace => self.parse_block_expression(),
             LBracket => self.parse_expression_list(Token::RBracket).map(|expressions| {
                 Expression::Array(expressions).into()
             }),
-            _ => Err(format!("No prefix parser found for {:?}", self.token))
+            _ => Err(format!("No prefix parser found for {:?}", &self.token))
         };
 
         return result;
@@ -339,7 +343,13 @@ impl<'a> Parser<'a> {
             NotEquals => self.parse_infix_expression(left),
             LessThan => self.parse_infix_expression(left),
             GreaterThan => self.parse_infix_expression(left),
+            // Special treatment, because parameters to a call expression
+            // are multiple right expressions rather than just one
+            // Idea: could we avoid this special behaviour if in parse expression,
+            // we check for a comment and if so parse an expression list?
+            // I guess that would allow for Python's implicit tuples as well, kinda cool
             LParen => self.parse_call_expression(left),
+            LBracket => self.parse_index_expression(left),
             _ => Err(format!("No infix parser found for {:?}", self.token))
         };
 
@@ -467,5 +477,18 @@ impl<'a> Parser<'a> {
         self.check_next_and_skip_to(&end)?;
 
         return Ok(result);
+    }
+
+    fn parse_index_expression(&mut self, left: Box<Expression>) -> Result<Box<Expression>, String> {
+        self.next_token();
+
+        let result = Ok(Expression::Index {
+            into: left,
+            index: self.parse_expression(&Precedence::Lowest)?,
+        }.into());
+
+        self.check_next_and_skip_to(&Token::RBracket)?;
+
+        return result;
     }
 }

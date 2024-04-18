@@ -86,7 +86,7 @@ impl<'a> Lexer<'a> {
         let start_index = self.index;
 
         // identifier starts with a letter but may contain numbers after that first letter
-        while self.char.is_ascii_alphanumeric() {
+        while self.char.is_ascii_alphanumeric() || self.char == b'_' {
             self.read_char();
         }
 
@@ -210,7 +210,7 @@ mod tests {
 
     #[test]
     fn next_token_real_world_input() {
-        let input = "let five = 5;
+        let input = "let five_num = 5;
         let ten = 10;
 
         let add = fn(x, y) {
@@ -225,7 +225,7 @@ mod tests {
 
         let expected_result = vec![
             Let,
-            Ident("five".into()),
+            Ident("five_num".into()),
             Assign,
             Int("5".into()),
             Semicolon,

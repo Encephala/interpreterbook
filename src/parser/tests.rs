@@ -76,8 +76,6 @@ fn parse_let_yields_correct_errors() {
 
     let program = parser.parse_program();
 
-    assert_eq!(program.errors.len(), 3);
-
     assert_eq!(program.errors, vec![
         "Failed to parse statement: Expected token Assign, found Int(\"5\")",
         "Failed to parse statement: Token in let Assign not an identifier",
@@ -183,8 +181,8 @@ fn infix_operators_integer_literals() {
     struct TestCase<'a>(&'a str, Box<Expression>, InfixOperator, Box<Expression>);
 
     let inputs = [
-        TestCase("5 + 5;", Expression::Int(5).into(), InfixOperator::Plus, Expression::Int(5).into()),
-        TestCase("5 - 5;", Expression::Int(5).into(), InfixOperator::Minus, Expression::Int(5).into()),
+        TestCase("5 + 5;", Expression::Int(5).into(), InfixOperator::Add, Expression::Int(5).into()),
+        TestCase("5 - 5;", Expression::Int(5).into(), InfixOperator::Subtract, Expression::Int(5).into()),
         TestCase("5 * 5;", Expression::Int(5).into(), InfixOperator::Multiply, Expression::Int(5).into()),
         TestCase("5 / 5;", Expression::Int(5).into(), InfixOperator::Divide, Expression::Int(5).into()),
         TestCase("5 > 5;", Expression::Int(5).into(), InfixOperator::GreaterThan, Expression::Int(5).into()),
@@ -232,13 +230,13 @@ fn infix_operators_correct_precedence() {
                 operator: InfixOperator::Multiply,
                 right: Ident("b".into()).into()
             }.into(),
-            operator: InfixOperator::Plus,
+            operator: InfixOperator::Add,
             right: Ident("c".into()).into()
         }),
 
         TestCase("a + b * c", InfixExpression {
             left: Ident("a".into()).into(),
-            operator: InfixOperator::Plus,
+            operator: InfixOperator::Add,
             right: InfixExpression {
                 left: Ident("b".into()).into(),
                 operator: InfixOperator::Multiply,
@@ -251,7 +249,7 @@ fn infix_operators_correct_precedence() {
                 function: Expression::Ident("add".into()).into(),
                 arguments: vec![InfixExpression {
                     left: Ident("a".into()).into(),
-                    operator: InfixOperator::Plus,
+                    operator: InfixOperator::Add,
                     right: InfixExpression {
                         left: Ident("b".into()).into(),
                         operator: InfixOperator::Multiply,
@@ -259,7 +257,7 @@ fn infix_operators_correct_precedence() {
                     }.into(),
                 }]
             }.into(),
-            operator: InfixOperator::Plus,
+            operator: InfixOperator::Add,
             right: Ident("d".into()).into()
         }),
 
@@ -290,7 +288,7 @@ fn infix_operators_correct_precedence() {
         TestCase("(5 + 6) * 2", InfixExpression {
             left: InfixExpression {
                 left: Int(5).into(),
-                operator: InfixOperator::Plus,
+                operator: InfixOperator::Add,
                 right: Int(6).into(),
             }.into(),
             operator: InfixOperator::Multiply,
@@ -445,6 +443,19 @@ fn function_parameters() {
 }
 
 #[test]
+fn function_parameter_invalid_errors() {
+    let input = "fn(5) { 1 };";
+
+    let mut parser = Parser::new(input);
+
+    let program = parser.parse_program();
+
+    assert_eq!(program.errors, vec![
+        "Failed to parse statement: Token Int(5) isn't an identifier"
+    ])
+}
+
+#[test]
 fn function_literal() {
     use Expression::*;
 
@@ -461,7 +472,7 @@ fn function_literal() {
         assert_eq!(*body, Expression::Block(vec![
                 Statement::ExpressionStatement { value: Expression::InfixExpression {
                     left: Ident("x".into()).into(),
-                    operator: InfixOperator::Plus,
+                    operator: InfixOperator::Add,
                     right: Ident("y".into()).into(),
                 }.into()}
             ]).into());
@@ -492,7 +503,7 @@ fn call_expressions() {
         assert_eq!(*arguments, vec![
             Int(1),
             InfixExpression { left: Int(2).into(), operator: InfixOperator::Multiply, right: Int(3).into() },
-            InfixExpression { left: Int(4).into(), operator: InfixOperator::Plus, right: Int(5).into() }
+            InfixExpression { left: Int(4).into(), operator: InfixOperator::Add, right: Int(5).into() }
         ])
     } else {
         panic!("Expression not a Call expression");

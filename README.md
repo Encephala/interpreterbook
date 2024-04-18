@@ -1,6 +1,11 @@
 # interpreterbook
 Repo for <interpreterbook.com>
 
+Note to future me:
+
+Expression parsers start on the first token of the expression and end on the last token, not after it.
+`parse_statement` ends *after* the semicolon, that is on the first token of the next statement.
+
 Some ideas for future me:
 - Add line numbers to lexer and pass through to evaluation for nice error messages
 - Implement rust's `as` syntax and disallow implicit typecasting

@@ -169,7 +169,7 @@ impl AstNode for Expression {
                 body
             } => Ok(Object::Function{
                 // TODO: Can we avoid cloning?
-                // Don't know yet, maybe if we just give Object a lifetime and work with refs?
+                // Don't know yet
                 parameters: parameters.clone(),
                 body: body.clone(),
                 environment: environment.clone()
@@ -263,8 +263,8 @@ fn evaluate_infix(left: &Object, operator: &InfixOperator, right: &Object) -> Re
 
 fn evaluate_infix_integer(left: isize, operator: &InfixOperator, right: isize) -> Result<Object, String> {
     match operator {
-        InfixOperator::Plus => Ok(Int(left + right)),
-        InfixOperator::Minus => Ok(Int(left - right)),
+        InfixOperator::Add => Ok(Int(left + right)),
+        InfixOperator::Subtract => Ok(Int(left - right)),
         InfixOperator::Multiply => Ok(Int(left * right)),
         InfixOperator::Divide => Ok(Int(left / right)),
         InfixOperator::GreaterThan => Ok(Bool(left > right)),
@@ -276,8 +276,8 @@ fn evaluate_infix_integer(left: isize, operator: &InfixOperator, right: isize) -
 
 fn evaluate_infix_boolean(left: bool, operator: &InfixOperator, right: bool) -> Result<Object, String> {
     match operator {
-        InfixOperator::Plus => Ok(Bool(left || right)),
-        InfixOperator::Minus => Ok(Bool(left && !right)),
+        InfixOperator::Add => Ok(Bool(left || right)),
+        InfixOperator::Subtract => Ok(Bool(left && !right)),
         InfixOperator::Multiply => Ok(Bool(left && right)),
         InfixOperator::GreaterThan => Ok(Bool(left && !right)),
         InfixOperator::LessThan => Ok(Bool(!left && right)),
@@ -289,8 +289,8 @@ fn evaluate_infix_boolean(left: bool, operator: &InfixOperator, right: bool) -> 
 
 fn evaluate_infix_string(left: &String, operator: &InfixOperator, right: &String) -> Result<Object, String> {
     match operator {
-        InfixOperator::Plus => Ok(Str(left.to_owned() + right)),
-        InfixOperator::Minus => {
+        InfixOperator::Add => Ok(Str(left.to_owned() + right)),
+        InfixOperator::Subtract => {
             if left.ends_with(right) {
                 Ok(Str(left.chars().take(left.len() - right.len()).collect::<String>()))
             } else {

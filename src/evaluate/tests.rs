@@ -252,7 +252,7 @@ fn function_literal() {
         assert_eq!(*body, Expression::Block(vec![
             Statement::ExpressionStatement { value: Expression::InfixExpression {
                 left: Expression::Ident("x".into()).into(),
-                operator: InfixOperator::Plus,
+                operator: InfixOperator::Add,
                 right: Expression::Int(2).into()
             }.into()}
         ]));

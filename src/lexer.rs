@@ -29,8 +29,8 @@ pub enum Token {
     RParen,
     LBrace,
     RBrace,
-    LSqBracket,
-    RSqBracket,
+    LBracket,
+    RBracket,
 
     Let,
     True,
@@ -175,8 +175,8 @@ impl<'a> Lexer<'a> {
             b')' => RParen,
             b'{' => LBrace,
             b'}' => RBrace,
-            b'[' => LSqBracket,
-            b']' => RSqBracket,
+            b'[' => LBracket,
+            b']' => RBracket,
             0 => Eof,
             _ => Illegal
         };
@@ -291,11 +291,11 @@ mod tests {
             Semicolon,
             Str("epic_string".into()),
             Semicolon,
-            LSqBracket,
+            LBracket,
             Int("1".into()),
             Comma,
             Int("2".into()),
-            RSqBracket,
+            RBracket,
             Semicolon,
             Eof,
         ];

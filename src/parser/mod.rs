@@ -67,8 +67,8 @@ impl From<&Token> for PrefixOperator {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum InfixOperator {
-    Plus,
-    Minus,
+    Add,
+    Subtract,
     Multiply,
     Divide,
     GreaterThan,
@@ -80,8 +80,8 @@ pub enum InfixOperator {
 impl From<&Token> for InfixOperator {
     fn from(value: &Token) -> Self {
         match value {
-            Token::Plus => InfixOperator::Plus,
-            Token::Minus => InfixOperator::Minus,
+            Token::Plus => InfixOperator::Add,
+            Token::Minus => InfixOperator::Subtract,
             Token::Asterisk => InfixOperator::Multiply,
             Token::Slash => InfixOperator::Divide,
             Token::GreaterThan => InfixOperator::GreaterThan,
@@ -146,12 +146,25 @@ impl<'a> Parser<'a> {
         self.next_token = self.lexer.next_token();
     }
 
-    /// Checks if *current* token matches and if so, skips it, else, return an error
+    /// Asserts that current token matches and if so, skips it
     fn check_and_skip(&mut self, token: &Token) -> Result<(), String> {
         if &self.token != token {
             return Err(
                 format!("Expected token {:?}, found {:?}", token, &self.token)
             );
+        }
+
+        self.next_token();
+
+        return Ok(());
+    }
+
+    /// Asserts that next token matches and if so, skips to it
+    fn check_next_and_skip_to(&mut self, token: &Token) -> Result<(), String> {
+        if &self.next_token != token {
+            return Err(format!(
+                "Expected token {:?}, found {:?}", token, &self.next_token
+            ))
         }
 
         self.next_token();
@@ -167,8 +180,8 @@ impl<'a> Parser<'a> {
 
     fn consume_until_statement_end(&mut self) {
         // TODO: This doesn't ignore semicolons in inner block statements
-        // Should keep a running counter of how many block deeps we are and only check Semicolon
-        // if
+        // Should keep a running counter of how many blocks deep we are and only check Semicolon
+        // if we're 0 blocks deep
         while self.token != Token::Semicolon && self.token != Token::Eof {
             self.next_token();
         }
@@ -201,11 +214,19 @@ impl<'a> Parser<'a> {
     fn parse_statement(&mut self) -> Result<Statement, String> {
         use Token::*;
 
-        return match self.token {
+        let result = match self.token {
             Let => self.parse_let_statement(),
             Return => self.parse_return_statement(),
             _ => self.parse_expression_statement()
-        };
+        }?;
+
+        self.next_token();
+
+        // Expression statements have optional semicolon,
+        // so that in REPL we don't have to type semicolon.
+        self.skip_if_token(&Token::Semicolon);
+
+        return Ok(result);
     }
 
     fn parse_let_statement(&mut self) -> Result<Statement, String> {
@@ -227,10 +248,6 @@ impl<'a> Parser<'a> {
 
         let value = self.parse_expression(&Precedence::Lowest)?;
 
-        self.next_token();
-
-        self.skip_if_token(&Token::Semicolon);
-
         return Ok(Statement::Let { name, value });
     }
 
@@ -240,21 +257,11 @@ impl<'a> Parser<'a> {
 
         let value = self.parse_expression(&Precedence::Lowest)?;
 
-        self.next_token();
-
-        self.skip_if_token(&Token::Semicolon);
-
         return Ok(Statement::Return { value });
     }
 
     fn parse_expression_statement(&mut self) -> Result<Statement, String> {
         let value = self.parse_expression(&Precedence::Lowest)?;
-
-        self.next_token();
-
-        // Expression statements have optional semicolon,
-        // so that in REPL we don't have to type semicolon.
-        self.skip_if_token(&Token::Semicolon);
 
         return Ok(Statement::ExpressionStatement { value });
     }
@@ -279,8 +286,9 @@ impl<'a> Parser<'a> {
         return self.get_precedence(&self.next_token);
     }
 
-    fn current_precedence(&self) -> &Precedence {
-        return self.get_precedence(&self.token);
+    fn current_precedence(&self) -> Precedence {
+        // Make owned value to drop reference to self on function end
+        return self.get_precedence(&self.token).to_owned();
     }
 
     fn parse_prefix(&mut self) -> Result<Box<Expression>, String> {
@@ -298,7 +306,7 @@ impl<'a> Parser<'a> {
             Function => self.parse_function_literal(),
             Semicolon => Ok(Expression::Empty.into()), // If statement starts with semicolon, it is an empty statement
             LBrace => self.parse_block_expression(),
-            LSqBracket => self.parse_expression_list(Token::RSqBracket).map(|expressions| {
+            LBracket => self.parse_expression_list(Token::RBracket).map(|expressions| {
                 Expression::Array(expressions).into()
             }),
             _ => Err(format!("No prefix parser found for {:?}", self.token))
@@ -339,7 +347,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_infix_expression(&mut self, left: Box<Expression>) -> Result<Box<Expression>, String>  {
-        let precedence = self.current_precedence().clone(); // Clone precedence to drop reference to self
+        let precedence = self.current_precedence();
 
         let operator = (&self.token).into();
 
@@ -356,17 +364,13 @@ impl<'a> Parser<'a> {
 
         let result = self.parse_expression(&Precedence::Lowest);
 
-        self.next_token();
-
-        if self.token != Token::RParen {
-            return Err(format!("Expected token {:?}, found {:?}", Token::RParen, &self.token));
-        }
+        self.check_next_and_skip_to(&Token::RParen)?;
 
         return result;
     }
 
     fn parse_if_expression(&mut self) -> Result<Box<Expression>, String> {
-        self.next_token();
+        self.next_token(); // If keyword
 
         self.check_and_skip(&Token::LParen)?;
 
@@ -402,20 +406,20 @@ impl<'a> Parser<'a> {
         }
 
         if self.token != Token::RBrace {
-            return Err(format!("Expected token {:?}, found {:?}", Token::RBrace, &self.token));
+            return Err(
+                format!("Expected token {:?}, found {:?}", Token::RBrace, &self.token)
+            );
         }
 
         return Ok(Expression::Block(result).into());
     }
 
     fn parse_function_literal(&mut self) -> Result<Box<Expression>, String> {
-        self.next_token();
-
-        self.check_and_skip(&Token::LParen)?;
+        self.check_next_and_skip_to(&Token::LParen)?;
 
         let parameters = self.parse_function_parameters()?;
 
-        self.check_and_skip(&Token::RParen)?;
+        self.next_token(); // Right parenthesis
 
         let body = self.parse_block_expression()?;
 
@@ -423,25 +427,17 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_function_parameters(&mut self) -> Result<Vec<String>, String> {
-        let mut result = vec![];
+        let result = self.parse_expression_list(Token::RParen);
 
-        if self.token == Token::RParen {
-            return Ok(result);
-        }
-
-        result.push((&self.token).into());
-
-        self.next_token();
-
-        while self.token == Token::Comma {
-            self.next_token();
-
-            result.push((&self.token).into());
-
-            self.next_token();
-        }
-
-        return Ok(result);
+        return result.map(|expressions| {
+            expressions.into_iter().map(|expression| {
+                if let Expression::Ident(value) = expression {
+                    Ok(value)
+                } else {
+                    Err(format!("Token {expression:?} isn't an identifier"))
+                }
+            }).collect::<Result<Vec<String>, String>>()
+        })?;
     }
 
     fn parse_call_expression(&mut self, left: Box<Expression>) -> Result<Box<Expression>, String> {
@@ -468,11 +464,7 @@ impl<'a> Parser<'a> {
             result.push(*self.parse_expression(&Precedence::Lowest)?);
         }
 
-        self.next_token();
-
-        if self.token != end {
-            return Err(format!("Expected token {:?}, found {:?}", Token::RParen, self.token));
-        }
+        self.check_next_and_skip_to(&end)?;
 
         return Ok(result);
     }

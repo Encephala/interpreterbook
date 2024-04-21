@@ -41,20 +41,20 @@ impl ExecutionEnvironment {
 }
 
 fn len(parameters: Vec<Object>) -> Result<Object, String> {
-    if parameters.is_empty() {
-        return Err("Called len with no parameters".into());
+    if parameters.len() != 1 {
+        return Err(format!("Called len with invalid number of parameters {}", parameters.len()));
     }
 
-    let result = parameters.iter().map(|parameter| {
-        match parameter {
-            Object::Str(value) => {
-                Ok(Object::Int(value.len() as isize))
-            }
-            Object::Array(value) => {
-                Ok(Object::Int(value.len() as isize))
-            },
-            _ => Err(format!("Parameter {parameter:?} of call to len doesn't have a length"))
+    match parameters.first().unwrap() {
+        Object::Str(value) => {
+            Ok(Object::Int(value.len() as isize))
         }
+        Object::Array(value) => {
+            Ok(Object::Int(value.len() as isize))
+        },
+        other => Err(format!("Parameter {other:?} is in valid in len"))
+    }
+}
     }).collect::<Result<Vec<Object>, String>>()?;
 
     match result.len() {

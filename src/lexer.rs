@@ -67,7 +67,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn peek(&self) -> u8 {
-        if self.index >= self.input.len() {
+        if self.index + 1 >= self.input.len() {
             return 0;
         }
 

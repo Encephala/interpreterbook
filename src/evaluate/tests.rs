@@ -366,11 +366,18 @@ fn array() {
 
 #[test]
 fn indexing_array() {
-    let input = "[1, 2, 3, 4][2];";
+    test_case!(isize);
 
-    let result = evaluate(input).unwrap();
+    let inputs = [
+        TestCase("[1, 2, 3, 4][2];", 3),
+        TestCase("fn(){ [1, 2] }()[1];", 2),
+    ];
 
-    assert_eq!(result, Object::Int(3));
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0).unwrap();
+
+        assert_eq!(result, Object::Int(test_case.1));
+    });
 }
 
 #[test]

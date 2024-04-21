@@ -322,7 +322,7 @@ fn evaluate_infix_index(
         if let Object::Int(right) = right.evaluate(environment)? {
             return left.iter()
                 .nth(right as usize)
-                .map(|object| { dbg!(&object); object.to_owned()})
+                .map(|object| { object.to_owned()})
                 .ok_or(format!("Index {right} out of bounds"));
         } else {
             return Err(format!("{right:?} is an invalid index"));

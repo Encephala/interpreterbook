@@ -7,6 +7,9 @@ use super::{ExecutionEnvironment, Object};
 #[derive(Debug, PartialEq, Clone, EnumIter)]
 pub enum BuiltinFunction {
     Len,
+    First,
+    Rest,
+    Push,
 }
 
 impl BuiltinFunction {
@@ -15,6 +18,9 @@ impl BuiltinFunction {
 
         match &self {
             Len => len(arguments),
+            First => first(arguments),
+            Rest => rest(arguments),
+            Push => push(arguments),
         }
     }
 }
@@ -25,6 +31,9 @@ impl std::fmt::Display for BuiltinFunction {
 
         match &self {
             Len => f.write_str("len"),
+            First => f.write_str("first"),
+            Rest => f.write_str("rest"),
+            Push => f.write_str("push"),
         }
     }
 }
@@ -55,10 +64,56 @@ fn len(parameters: Vec<Object>) -> Result<Object, String> {
         other => Err(format!("Parameter {other:?} is in valid in len"))
     }
 }
-    }).collect::<Result<Vec<Object>, String>>()?;
 
-    match result.len() {
-        1 => Ok(result.into_iter().next().unwrap()),
-        _ => Ok(Object::Array(result)),
+fn first(parameters: Vec<Object>) -> Result<Object, String> {
+    if parameters.len() != 1 {
+        return Err(format!("Called first with invalid number of parameters {}", parameters.len()));
+    }
+
+    match parameters.first().unwrap() {
+        Object::Array(value) => {
+            if value.is_empty() {
+                Err(format!("Parameter {value:?} is empty in first"))
+            } else {
+                Ok(value.first().unwrap().clone())
+            }
+        },
+        other => Err(format!("Parameter {other:?} is invalid in first")),
+    }
+}
+
+fn rest(parameters: Vec<Object>) -> Result<Object, String> {
+    if parameters.len() != 1 {
+        return Err(format!("Called rest with invalid number of parameters {}", parameters.len()));
+    }
+
+    match parameters.first().unwrap() {
+        Object::Array(value) => {
+            if value.is_empty() {
+                Err(format!("Parameter {value:?} is empty in rest"))
+            } else {
+                Ok(Object::Array(value.into_iter().skip(1).cloned().collect()))
+            }
+        },
+        other => Err(format!("Parameter {other:?} is invalid in first")),
+    }
+}
+
+fn push(parameters: Vec<Object>) -> Result<Object, String> {
+    if parameters.len() != 2 {
+        return Err(format!("Called push with invalid number of parameters {}", parameters.len()));
+    }
+
+    let mut iter = parameters.iter().cloned();
+
+    let array = iter.next().unwrap();
+    let new = iter.next().unwrap();
+
+    match array {
+        Object::Array(mut array) => {
+            array.push(new);
+            Ok(Object::Array(array))
+        },
+        other => Err(format!("Parameter {other:?} is invalid in push")),
     }
 }

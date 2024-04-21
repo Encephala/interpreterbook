@@ -390,3 +390,55 @@ fn indexing_array_out_of_bounds_error() {
 
     assert_eq!(result, Err("Index 0 out of bounds".into()));
 }
+
+#[test]
+fn builtin_first() {
+    test_case!(Object);
+
+    let inputs = [
+        TestCase("first([1, 2])", Object::Int(1)),
+        TestCase("first(['hey', 'bye'])", Object::Str("hey".into())),
+        TestCase("first([1, 2])", Object::Int(1)),
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0).unwrap();
+
+        assert_eq!(result, test_case.1);
+    })
+}
+
+#[test]
+fn builtin_rest() {
+    test_case!(Object);
+
+    let inputs = [
+        TestCase("rest([1, 2])", Object::Array(vec![Object::Int(2)])),
+        TestCase("rest(['hey', 'bye'])", Object::Array(vec![Object::Str("bye".into())])),
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0).unwrap();
+
+        assert_eq!(result, test_case.1);
+    })
+}
+
+#[test]
+fn builtin_push() {
+    test_case!(Object);
+
+    let inputs = [
+        TestCase("push([1, 2], 3)", Object::Array(vec![
+            Object::Int(1),
+            Object::Int(2),
+            Object::Int(3)]
+        )),
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0).unwrap();
+
+        assert_eq!(result, test_case.1);
+    })
+}

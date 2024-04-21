@@ -47,9 +47,9 @@ impl std::fmt::Display for Object {
             Bool(value) => write!(f, "{value}"),
             Str(value) => f.write_str(value),
             Return(value) => write!(f, "{value}"),
-            Function{ parameters, body, environment} => write!(
+            Function{ parameters, body, environment: _ } => write!(
                 f,
-                "fn({parameters:?}) {body:?} with env {environment:?}"
+                "fn({parameters:?}) {{{body:?}}}"
             ),
             Builtin(builtin) => write!(
                 f,
@@ -57,7 +57,7 @@ impl std::fmt::Display for Object {
             ),
             Array(values) => write!(
                 f,
-                "({})",
+                "[{}]",
                 values.iter().map(|object| format!("{object}")).collect::<Vec<_>>().join(", ")
             ),
             None => f.write_str("None"),

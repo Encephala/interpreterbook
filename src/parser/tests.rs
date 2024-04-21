@@ -560,3 +560,54 @@ fn array_expression() {
         ]);
     }
 }
+
+#[test]
+fn parse_hash_literal() {
+    use Expression::*;
+
+    let input = "#'one': 1, true: 2$;";
+
+    let program = parse_then_check_errors_and_length(input, 1);
+
+    let statement = program.first_statement();
+
+    let value = check_and_destruct_expression_statement(statement);
+
+    if let HashLiteral(value) = value {
+        assert_eq!(
+            value.get(&Str("one".into())),
+            Some(&Int(1)),
+        );
+
+        assert_eq!(
+            value.get(&Bool(true)),
+            Some(&Int(2)),
+        );
+
+        assert_eq!(
+            value.get(&Bool(false)),
+            None,
+        )
+    } else {
+        panic!("Expression wasn't a Hash literal expression")
+    }
+
+}
+
+#[test]
+fn parse_empty_hash_literal() {
+    let input = "#$;";
+
+    let program = parse_then_check_errors_and_length(input, 1);
+
+    let statement = program.first_statement();
+
+    let value = check_and_destruct_expression_statement(statement);
+
+    if let Expression::HashLiteral(value) = value {
+        assert!(value.is_empty());
+    } else {
+        dbg!(&value);
+        panic!("Expression wasn't a Hash literal expression")
+    }
+}

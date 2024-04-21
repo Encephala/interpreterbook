@@ -22,6 +22,7 @@ pub enum Token {
     GreaterThan,
 
     Comma,
+    Colon,
     Semicolon,
     Apostrophe,
 
@@ -31,6 +32,8 @@ pub enum Token {
     RBrace,
     LBracket,
     RBracket,
+    HashStart, // #
+    HashEnd, // $
 
     Let,
     True,
@@ -147,34 +150,37 @@ impl<'a> Lexer<'a> {
             c if c.is_ascii_alphabetic() => return self.read_identifier(),
             c if c.is_ascii_digit() => return self.read_number(),
             b'=' => {
-                        if self.peek() == b'=' {
-                            self.read_char();
-                            Equals
-                        } else {
-                            Assign
-                        }
+                if self.peek() == b'=' {
+                    self.read_char();
+                    Equals
+                } else {
+                    Assign
+                }
                     }
             b'+' => Plus,
             b'-' => Minus,
             b'!' => {
-                        if self.peek() == b'=' {
-                            self.read_char();
-                            NotEquals
-                        } else {
-                            Bang
-                        }
+                if self.peek() == b'=' {
+                    self.read_char();
+                    NotEquals
+                } else {
+                    Bang
+                }
                     }
             b'*' => Asterisk,
             b'/' => Slash,
             b'<' => LessThan,
             b'>' => GreaterThan,
             b',' => Comma,
+            b':' => Colon,
             b';' => Semicolon,
             b'"' | b'\'' => return self.read_string(),
             b'(' => LParen,
             b')' => RParen,
             b'{' => LBrace,
             b'}' => RBrace,
+            b'#' => HashStart,
+            b'$' => HashEnd,
             b'[' => LBracket,
             b']' => RBracket,
             0 => Eof,
@@ -314,7 +320,8 @@ mod tests {
         return false;
         }
         10 == 10;
-        10 != 9;";
+        10 != 9;
+        #1: 5$";
 
         let mut lexer = Lexer::new(input);
 
@@ -358,6 +365,11 @@ mod tests {
             NotEquals,
             Int("9".into()),
             Semicolon,
+            HashStart,
+            Int("1".into()),
+            Colon,
+            Int("5".into()),
+            HashEnd,
             Eof
         ];
 

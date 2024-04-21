@@ -13,7 +13,7 @@ pub struct Program {
 }
 
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub enum Statement {
     Let { name: String, value: Box<Expression> },
     Return { value: Box<Expression> },
@@ -21,7 +21,7 @@ pub enum Statement {
 }
 
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Expression {
     Empty,
     Ident(String),
@@ -39,6 +39,16 @@ pub enum Expression {
     },
     Array(Vec<Expression>),
     Index { into: Box<Expression>, index: Box<Expression> },
+    HashLiteral(HashMap<Expression, Expression>),
+}
+
+impl std::hash::Hash for Expression {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match &self {
+            Expression::HashLiteral(_) => panic!("Can't be fucked to do this tbh"),
+            _ => std::mem::discriminant(self).hash(state),
+        }
+    }
 }
 
 impl From<&Token> for String {
@@ -50,7 +60,7 @@ impl From<&Token> for String {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub enum PrefixOperator {
     Negate,
     Not,
@@ -66,7 +76,7 @@ impl From<&Token> for PrefixOperator {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub enum InfixOperator {
     Add,
     Subtract,
@@ -313,6 +323,7 @@ impl<'a> Parser<'a> {
             LBracket => self.parse_expression_list(Token::RBracket).map(|expressions| {
                 Expression::Array(expressions).into()
             }),
+            HashStart => self.parse_hash_literal(),
             _ => Err(format!("No prefix parser found for {:?}", &self.token))
         };
 
@@ -490,5 +501,36 @@ impl<'a> Parser<'a> {
         self.check_next_and_skip_to(&Token::RBracket)?;
 
         return result;
+    }
+
+    fn parse_hash_literal(&mut self) -> Result<Box<Expression>, String> {
+        let mut result = HashMap::new();
+
+        println!("Before loop {:?}, {:?}", &self.token, &self.next_token);
+
+        while self.next_token != Token::HashEnd {
+            println!("Start loop {:?}, {:?}", &self.token, &self.next_token);
+            self.next_token();
+
+            let key = self.parse_expression(&Precedence::Lowest)?;
+
+            self.check_next_and_skip_to(&Token::Colon)?;
+
+            self.next_token();
+
+            let value = self.parse_expression(&Precedence::Lowest)?;
+
+            println!("End loop {:?}, {:?}", &self.token, &self.next_token);
+            result.insert(*key, *value);
+
+            if self.next_token == Token::Comma {
+                self.next_token();
+                continue;
+            }
+        }
+
+        self.check_next_and_skip_to(&Token::HashEnd)?;
+
+        return Ok(Expression::HashLiteral(result).into());
     }
 }

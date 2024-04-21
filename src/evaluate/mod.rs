@@ -187,6 +187,7 @@ impl AstNode for Expression {
                 index,
                 environment
             ),
+            Expression::HashLiteral(_) => todo!(),
         }
     }
 }
@@ -330,7 +331,6 @@ fn evaluate_infix_index(
     } else {
         return Err(format!("Can't index into {left:?}"));
     }
-
 }
 
 fn evaluate_conditional_expression(
@@ -354,7 +354,8 @@ fn evaluate_conditional_expression(
     return Err(format!("Condition {:?} didn't evaluate to a Boolean object", condition));
 }
 
-fn evaluate_function_call(function: &Expression,
+fn evaluate_function_call(
+    function: &Expression,
     arguments: &[Expression],
     environment: &mut ExecutionEnvironment
 ) -> Result<Object, String> {

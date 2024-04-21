@@ -325,6 +325,8 @@ fn builtin_len() {
         TestCase("len('')", 0),
         TestCase("len('abc')", 3),
         TestCase("len('a b c')", 5),
+        TestCase("len([1, 2])", 2),
+        TestCase("len([])", 0),
     ];
 
     inputs.iter().for_each(|test_case| {

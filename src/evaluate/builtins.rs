@@ -50,6 +50,9 @@ fn len(parameters: Vec<Object>) -> Result<Object, String> {
             Object::Str(value) => {
                 Ok(Object::Int(value.len() as isize))
             }
+            Object::Array(value) => {
+                Ok(Object::Int(value.len() as isize))
+            },
             _ => Err(format!("Parameter {parameter:?} of call to len doesn't have a length"))
         }
     }).collect::<Result<Vec<Object>, String>>()?;

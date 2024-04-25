@@ -119,13 +119,13 @@ impl<'a> Lexer<'a> {
         return Int(str::from_utf8(&self.input[start_index..self.index]).unwrap().into());
     }
 
-    fn read_string(&mut self) -> Token {
+    fn read_string(&mut self, closing_char: u8) -> Token {
         // Skip apostrophe
         self.read_char();
 
         let start_index = self.index;
 
-        while self.char != b'"' && self.char != b'\'' && self.char != 0 {
+        while self.char != closing_char && self.char != 0 {
             self.read_char()
         }
 
@@ -174,7 +174,7 @@ impl<'a> Lexer<'a> {
             b',' => Comma,
             b':' => Colon,
             b';' => Semicolon,
-            b'"' | b'\'' => return self.read_string(),
+            c if c == b'"' || c == b'\'' => return self.read_string(c),
             b'(' => LParen,
             b')' => RParen,
             b'{' => LBrace,

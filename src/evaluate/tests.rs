@@ -477,3 +477,36 @@ fn hash_literal() {
         panic!("Result wasn't a Hash object")
     }
 }
+
+#[test]
+fn hash_literal_indexing() {
+    test_case!(Object);
+
+    let inputs = [
+        TestCase("#'foo': 5$['foo']", Object::Int(5)),
+        TestCase("#5: 5$[5]", Object::Int(5)),
+        TestCase("#true: 5$[true]", Object::Int(5)),
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0).unwrap();
+
+        assert_eq!(result, test_case.1);
+    });
+}
+
+#[test]
+fn hash_literal_errors() {
+    test_case!(&'a str);
+
+    let inputs = [
+        TestCase("#'foo': 5$['bar']", "Str(\"bar\") not found in map"),
+        TestCase("#'foo': 5$[true]", "Bool(true) not found in map"),
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0);
+
+        assert_eq!(result, Err(test_case.1.into()));
+    })
+}

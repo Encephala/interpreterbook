@@ -9,7 +9,7 @@ use builtins::BuiltinFunction;
 mod tests;
 
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Object {
     Int(isize),
     Bool(bool),
@@ -18,6 +18,7 @@ pub enum Object {
     Function{ parameters: Vec<String>, body: Box<Expression>, environment: ExecutionEnvironment },
     Builtin(BuiltinFunction),
     Array(Vec<Object>),
+    Hash(HashMap<Object, Object>),
     None,
 }
 
@@ -60,17 +61,34 @@ impl std::fmt::Display for Object {
                 "[{}]",
                 values.iter().map(|object| format!("{object}")).collect::<Vec<_>>().join(", ")
             ),
+            Hash(value) => write!(f, "HashMap {value:?}"),
             None => f.write_str("None"),
         }
     }
 }
 
+impl std::hash::Hash for Object {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match &self {
+            Object::Hash(_) => panic!("Can't be fucked to do this tbh"),
+            _ => std::mem::discriminant(self).hash(state),
+        }
+    }
+}
 
-#[derive(Debug, PartialEq, Clone)]
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExecutionEnvironment {
     variables: HashMap<String, Object>,
     builtins: HashMap<String, Object>
 }
+
+impl std::hash::Hash for ExecutionEnvironment {
+    fn hash<H: std::hash::Hasher>(&self, _state: &mut H) {
+        panic!("Can't be bothered to do this");
+    }
+}
+
 
 impl ExecutionEnvironment {
     pub fn new() -> Self {
@@ -187,7 +205,7 @@ impl AstNode for Expression {
                 index,
                 environment
             ),
-            Expression::HashLiteral(_) => todo!(),
+            Expression::HashLiteral(value) => evaluate_hash_literal(value, environment),
         }
     }
 }
@@ -391,4 +409,23 @@ fn evaluate_function_call(
     } else {
         return Err(format!("{function:?} isn't a function"));
     }
+}
+
+fn evaluate_hash_literal(
+    value: &HashMap<Expression,
+    Expression>, environment: &mut ExecutionEnvironment
+) -> Result<Object, String> {
+    let mut result = HashMap::new();
+
+    value.iter()
+        .map(|(key, value)| -> Result<(), String> {
+        let key = key.evaluate(environment)?;
+        let value = value.evaluate(environment)?;
+
+        result.insert(key, value);
+
+        return Ok(());
+    }).collect::<Result<Vec<_>, String>>()?;
+
+    return Ok(Object::Hash(result));
 }

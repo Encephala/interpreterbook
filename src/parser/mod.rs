@@ -506,10 +506,7 @@ impl<'a> Parser<'a> {
     fn parse_hash_literal(&mut self) -> Result<Box<Expression>, String> {
         let mut result = HashMap::new();
 
-        println!("Before loop {:?}, {:?}", &self.token, &self.next_token);
-
         while self.next_token != Token::HashEnd {
-            println!("Start loop {:?}, {:?}", &self.token, &self.next_token);
             self.next_token();
 
             let key = self.parse_expression(&Precedence::Lowest)?;
@@ -520,7 +517,6 @@ impl<'a> Parser<'a> {
 
             let value = self.parse_expression(&Precedence::Lowest)?;
 
-            println!("End loop {:?}, {:?}", &self.token, &self.next_token);
             result.insert(*key, *value);
 
             if self.next_token == Token::Comma {

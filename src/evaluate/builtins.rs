@@ -4,7 +4,7 @@ use strum_macros::EnumIter;
 use super::{ExecutionEnvironment, Object};
 
 
-#[derive(Debug, PartialEq, Clone, EnumIter)]
+#[derive(Debug, PartialEq, Eq, Clone, EnumIter, Hash)]
 pub enum BuiltinFunction {
     Len,
     First,

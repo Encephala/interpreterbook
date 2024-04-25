@@ -442,3 +442,38 @@ fn builtin_push() {
         assert_eq!(result, test_case.1);
     })
 }
+
+#[test]
+fn hash_literal() {
+    let input = "
+    let two = 'two';
+    #
+        'one': 10 - 9,
+        two: 1 + 1,
+        'thr' + 'ee': 6 / 2,
+        4: 4,
+        true: 5,
+        false: 6,
+    $;";
+
+    let result = evaluate(input).unwrap();
+
+    struct TestCase(Object, isize);
+
+    let tests = [
+        TestCase(Object::Str("one".into()), 1),
+        TestCase(Object::Str("two".into()), 2),
+        TestCase(Object::Str("three".into()), 3),
+        TestCase(Object::Int(4), 4),
+        TestCase(Object::Bool(true), 5),
+        TestCase(Object::Bool(false), 6),
+    ];
+
+    if let Object::Hash(value) = result {
+        tests.iter().for_each(|test_case| {
+            assert_eq!(value.get(&test_case.0).unwrap(), &Object::Int(test_case.1));
+        })
+    } else {
+        panic!("Result wasn't a Hash object")
+    }
+}

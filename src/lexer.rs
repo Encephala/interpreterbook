@@ -125,7 +125,7 @@ impl<'a> Lexer<'a> {
 
         let start_index = self.index;
 
-        while self.char != b'"' && self.char != b'\'' {
+        while self.char != b'"' && self.char != b'\'' && self.char != 0 {
             self.read_char()
         }
 

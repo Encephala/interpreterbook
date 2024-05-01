@@ -198,21 +198,21 @@ mod tests {
     use super::{Token, Token::*, Lexer};
 
     impl<'a> Lexer<'a> {
-    pub fn collect_input_to_tokens(&mut self) -> Vec<Token> {
-        let mut tokens = vec![];
+        pub fn collect_input_to_tokens(&mut self) -> Vec<Token> {
+            let mut tokens = vec![];
 
-        loop {
-            let token = self.next_token();
+            loop {
+                let token = self.next_token();
 
-            tokens.push(token);
+                tokens.push(token);
 
-            if tokens.last().unwrap() == &Token::Eof {
-                break;
+                if tokens.last().unwrap() == &Token::Eof {
+                    break;
+                }
             }
-        }
 
-        return tokens
-    }
+            return tokens
+        }
     }
 
     #[test]

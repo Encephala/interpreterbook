@@ -107,7 +107,7 @@ fn prefix_operator_minus_error_for_incompatible_types() {
     ].iter().for_each(|input| {
         let result = evaluate(input);
 
-        if !result.is_err() {
+        if result.is_ok() {
             panic!("Didn't get error as expected, got {:?}", result);
         }
     });

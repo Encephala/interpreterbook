@@ -95,7 +95,7 @@ fn rest(arguments: Vec<Object>) -> Result<Object, String> {
             if value.is_empty() {
                 Err(format!("Argument {value:?} is empty in rest"))
             } else {
-                Ok(Object::Array(value.into_iter().skip(1).cloned().collect()))
+                Ok(Object::Array(value.iter().skip(1).cloned().collect()))
             }
         },
         other => Err(format!("Argument {other:?} is invalid in first")),

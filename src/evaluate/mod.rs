@@ -340,8 +340,7 @@ fn evaluate_infix_index(
     match left.evaluate(environment)? {
         Object::Array(left) => {
             if let Object::Int(right) = right.evaluate(environment)? {
-                return left.iter()
-                    .nth(right as usize)
+                return left.get(right as usize)
                     .map(|object| { object.to_owned()})
                     .ok_or(format!("Index {right} out of bounds"));
             } else {
@@ -351,7 +350,7 @@ fn evaluate_infix_index(
         Object::Hash(left) => {
             let right = right.evaluate(environment)?;
 
-            left.get(&right).map(|object| object.clone()).ok_or(
+            left.get(&right).cloned().ok_or(
                 format!("{right:?} not found in map")
             )
         },

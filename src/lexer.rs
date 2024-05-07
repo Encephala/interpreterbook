@@ -42,6 +42,9 @@ pub enum Token {
     Else,
     Function,
     Return,
+
+    Quote,
+    Unquote,
 }
 
 use Token::*;
@@ -105,6 +108,8 @@ impl<'a> Lexer<'a> {
             b"else" => Else,
             b"fn" => Function,
             b"return" => Return,
+            b"quote" => Quote,
+            b"unquote" => Unquote,
             _ => Ident(str::from_utf8(&self.input[start_index..self.index]).unwrap().into())
         };
     }

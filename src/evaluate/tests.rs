@@ -510,3 +510,23 @@ fn hash_literal_errors() {
         assert_eq!(result, Err(test_case.1.into()));
     })
 }
+
+#[test]
+fn quote_basic_functionality() {
+    test_case!(Expression);
+
+    let inputs = [
+        TestCase("quote(5)", Expression::Int(5)),
+        TestCase("quote('5')", Expression::Str("5".into())),
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0).unwrap();
+
+        if let Object::Quote(value) = result {
+            assert_eq!(value, test_case.1);
+        } else {
+            panic!("Resulting object wasn't a Quote object");
+        }
+    })
+}

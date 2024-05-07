@@ -40,6 +40,7 @@ pub enum Expression {
     Array(Vec<Expression>),
     Index { into: Box<Expression>, index: Box<Expression> },
     HashLiteral(HashMap<Expression, Expression>),
+    Quote(Box<Expression>),
 }
 
 impl std::hash::Hash for Expression {
@@ -320,10 +321,11 @@ impl<'a> Parser<'a> {
             Function => self.parse_function_literal(),
             Semicolon => Ok(Expression::Empty.into()), // When statement starts with semicolon, it is an empty statement
             LBrace => self.parse_block_expression(),
-            LBracket => self.parse_expression_list(Token::RBracket).map(|expressions| {
+            LBracket => self.parse_expression_list(&Token::RBracket).map(|expressions| {
                 Expression::Array(expressions).into()
             }),
             HashStart => self.parse_hash_literal(),
+            Quote => self.parse_quote_literal(),
             _ => Err(format!("No prefix parser found for {:?}", &self.token))
         };
 
@@ -448,7 +450,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_function_parameters(&mut self) -> Result<Vec<String>, String> {
-        let result = self.parse_expression_list(Token::RParen);
+        let result = self.parse_expression_list(&Token::RParen);
 
         return result.map(|expressions| {
             expressions.into_iter().map(|expression| {
@@ -462,17 +464,17 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_call_expression(&mut self, left: Box<Expression>) -> Result<Box<Expression>, String> {
-        let arguments = self.parse_expression_list(Token::RParen)?;
+        let arguments = self.parse_expression_list(&Token::RParen)?;
 
         return Ok(Expression::CallExpression { function: left, arguments }.into())
     }
 
-    fn parse_expression_list(&mut self, end: Token) -> Result<Vec<Expression>, String> {
+    fn parse_expression_list(&mut self, end: &Token) -> Result<Vec<Expression>, String> {
         self.next_token();
 
         let mut result = vec![];
 
-        if self.token == end {
+        if self.token == *end {
             return Ok(result)
         }
 
@@ -485,7 +487,7 @@ impl<'a> Parser<'a> {
             result.push(*self.parse_expression(&Precedence::Lowest)?);
         }
 
-        self.check_next_and_skip_to(&end)?;
+        self.check_next_and_skip_to(end)?;
 
         return Ok(result);
     }
@@ -528,5 +530,20 @@ impl<'a> Parser<'a> {
         self.check_next_and_skip_to(&Token::HashEnd)?;
 
         return Ok(Expression::HashLiteral(result).into());
+    }
+
+    fn parse_quote_literal(&mut self) -> Result<Box<Expression>, String> {
+        self.check_next_and_skip_to(&Token::LParen)?;
+
+        let parameters = self.parse_expression_list(&Token::RParen)?;
+
+        // Ensure correct parameter length
+        match parameters.len() {
+            0 => return Err("No parameters passed to `quote`".into()),
+            n if n > 1 => return Err(format!("Got {n} parameters in `quote`, expected 1")),
+            _ => (),
+        }
+
+        return Ok(Expression::Quote(parameters.into_iter().next().unwrap().into()).into());
     }
 }

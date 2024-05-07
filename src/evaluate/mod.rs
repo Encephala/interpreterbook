@@ -19,6 +19,7 @@ pub enum Object {
     Builtin(BuiltinFunction),
     Array(Vec<Object>),
     Hash(HashMap<Object, Object>),
+    Quote(Expression),
     None,
 }
 
@@ -62,6 +63,7 @@ impl std::fmt::Display for Object {
                 values.iter().map(|object| format!("{object}")).collect::<Vec<_>>().join(", ")
             ),
             Hash(value) => write!(f, "HashMap {value:?}"),
+            Quote(value) => write!(f, "{:?}", value),
             None => f.write_str("None"),
         }
     }
@@ -167,7 +169,7 @@ impl AstNode for Expression {
             Expression::Ident(name) => {
                 environment.get(name)
                     .map(Object::clone)
-                    .ok_or(format!("Variable {name} doesn't exist"))
+                    .ok_or(format!("Identifier '{name}' doesn't exist"))
             },
             Expression::Int(value) => Ok(Int(*value as isize)),
             Expression::Str(value) => Ok(Str(value.clone())),
@@ -206,6 +208,7 @@ impl AstNode for Expression {
                 environment
             ),
             Expression::HashLiteral(value) => evaluate_hash_literal(value, environment),
+            Expression::Quote(value) => Ok(Object::Quote((**value).clone())),
         }
     }
 }

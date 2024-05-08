@@ -5,11 +5,29 @@ use std::collections::HashMap;
 
 use super::lexer::{Token, Lexer};
 
+pub trait Modifiable {
+    /// Recursively traverses the AST, mapping any expression found using the given function
+    fn modify<F>(self, modifying_function: &mut F) -> Result<Self, String>
+    where Self: Sized,
+    F: FnMut(Expression) -> Result<Expression, String>;
+}
 
 #[derive(Debug)]
 pub struct Program {
     pub statements: Vec<Statement>,
     pub errors: Vec<String>
+}
+
+impl Modifiable for Program {
+    fn modify<F>(mut self, modifying_function: &mut F) -> Result<Program, String>
+    where F: FnMut(Expression) -> Result<Expression, String> {
+        self.statements = self.statements
+            .into_iter()
+            .map(|statement| statement.modify(modifying_function))
+            .collect::<Result<Vec<Statement>, String>>()?;
+
+        return Ok(self);
+    }
 }
 
 
@@ -20,6 +38,22 @@ pub enum Statement {
     ExpressionStatement { value: Box<Expression> },
 }
 
+impl Modifiable for Statement {
+    fn modify<F>(self, modifying_function: &mut F) -> Result<Statement, String>
+    where F: FnMut(Expression) -> Result<Expression, String> {
+        match self {
+            Statement::ExpressionStatement { value } => {
+                return Ok(Statement::ExpressionStatement { value: value.modify(modifying_function)?.into() })
+            },
+            Statement::Let { name, value } => {
+                return Ok(Statement::Let { name, value: value.modify(modifying_function)?.into()})
+            },
+            Statement::Return { value } => {
+                return Ok(Statement::Return { value: value.modify(modifying_function)?.into() })
+            },
+        }
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Expression {
@@ -41,6 +75,86 @@ pub enum Expression {
     Index { into: Box<Expression>, index: Box<Expression> },
     HashLiteral(HashMap<Expression, Expression>),
     Quote(Box<Expression>),
+    Unquote(Box<Expression>),
+}
+
+impl Modifiable for Expression {
+    fn modify<F>(self, modifying_function: &mut F) -> Result<Expression, String>
+    where F: FnMut(Expression) -> Result<Expression, String> {
+        use Expression::*;
+
+        // TODO: This logic isn't right.
+        // A modifying function could want to replace e.g. InfixExpressions, not just atomic expressions
+        // Additionally, what should behaviour be if f.i. a Quote holds an Int, and the modifying_function modifies Ints?
+        // Currently, the int doesn't get modified.
+        //
+        // Anyways, I'm never going to fix this, bye
+        // To fix it, modifying function would have to be replaced by a struct that contains info on what
+        // Expressions it will modify. Then, before this match, we'd have to do check if self is one of those
+        // Expressions, if so apply it and early return (or should it recursively apply first anyways?),
+        // if not execute the logic below
+        match self {
+            Block(statements) => Ok(Block(
+                statements.into_iter()
+                    .map(|expression| expression.modify(modifying_function))
+                    .collect::<Result<Vec<Statement>, String>>()?,
+            )),
+            PrefixExpression { operator, right } => Ok(PrefixExpression {
+                operator,
+                right: right.modify(modifying_function)?.into()
+            }),
+            InfixExpression { left, operator, right } => Ok(InfixExpression {
+                left: left.modify(modifying_function)?.into(),
+                operator,
+                right: right.modify(modifying_function)?.into(),
+            }),
+            If { condition, consequence, alternative } => Ok(If {
+                condition: condition.modify(modifying_function)?.into(),
+                consequence: consequence.modify(modifying_function)?.into(),
+                alternative: {
+                        let mapped = alternative.map(|value| {
+                            value.modify(modifying_function)
+                        });
+
+                        if let Some(result) = mapped {
+                            Some(result?.into())
+                        } else {
+                            None
+                        }
+                    }
+            }),
+            Function { parameters, body } => Ok(Function {
+                parameters,
+                body: body.modify(modifying_function)?.into()
+            }),
+            CallExpression { function, arguments } => Ok(CallExpression {
+                function: function.modify(modifying_function)?.into(),
+                arguments: arguments.into_iter().map(|arg| arg.modify(modifying_function))
+                    .collect::<Result<Vec<Expression>, String>>()?,
+            }),
+            Array(expressions) => Ok(Array(
+                expressions.into_iter().map(|expression| expression.modify(modifying_function))
+                    .collect::<Result<Vec<Expression>, String>>()?,
+            )),
+            Index { into, index } => Ok(Index {
+                into: into.modify(modifying_function)?.into(),
+                index: index.modify(modifying_function)?.into()
+            }),
+            // TODO: I think this can be done in a cleaner way
+            HashLiteral(literal) => Ok(HashLiteral({
+                literal.into_iter()
+                    .map(|(key, value)| -> Result<(Expression, Expression), String> {
+                        Ok((key.modify(modifying_function)?, value.modify(modifying_function)?))
+                    })
+                    .try_fold(HashMap::new(), |mut result, item| match item {
+                            Ok(pair) => { result.insert(pair.0, pair.1); Ok(result) },
+                            Err(message) => Err(message),
+                        }
+                    )?
+            })),
+            _ => (*modifying_function)(self)
+        }
+    }
 }
 
 impl std::hash::Hash for Expression {
@@ -326,6 +440,7 @@ impl<'a> Parser<'a> {
             }),
             HashStart => self.parse_hash_literal(),
             Quote => self.parse_quote_literal(),
+            Unquote => self.parse_unquote_literal(),
             _ => Err(format!("No prefix parser found for {:?}", &self.token))
         };
 
@@ -545,5 +660,20 @@ impl<'a> Parser<'a> {
         }
 
         return Ok(Expression::Quote(parameters.into_iter().next().unwrap().into()).into());
+    }
+
+    fn parse_unquote_literal(&mut self) -> Result<Box<Expression>, String> {
+        self.check_next_and_skip_to(&Token::LParen)?;
+
+        let parameters = self.parse_expression_list(&Token::RParen)?;
+
+        // Ensure correct parameter length
+        match parameters.len() {
+            0 => return Err("No parameters passed to `quote`".into()),
+            n if n > 1 => return Err(format!("Got {n} parameters in `quote`, expected 1")),
+            _ => (),
+        }
+
+        return Ok(Expression::Unquote(parameters.into_iter().next().unwrap().into()).into());
     }
 }

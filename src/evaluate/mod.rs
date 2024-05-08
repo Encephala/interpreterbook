@@ -2,7 +2,7 @@ mod builtins;
 
 use std::collections::HashMap;
 
-use super::parser::{Statement, Expression, Program, PrefixOperator, InfixOperator};
+use super::parser::{Statement, Expression, Program, PrefixOperator, InfixOperator, Modifiable};
 use builtins::BuiltinFunction;
 
 #[cfg(test)]
@@ -78,6 +78,27 @@ impl std::hash::Hash for Object {
     }
 }
 
+// For inside unquote calls, where we have to convert an object back into an expression
+impl From<Object> for Expression {
+    fn from(value: Object) -> Self {
+        use Expression as E;
+
+        match value {
+            Int(value) => {
+                let negative = value < 0;
+
+                if negative {
+                    E::PrefixExpression { operator: PrefixOperator::Negate, right: E::Int((-value) as usize).into() }
+                } else {
+                    E::Int(value as usize)
+                }
+            }
+            Bool(value) => E::Bool(value),
+            Str(value) => E::Str(value),
+            other => panic!("Tried to convert object {other:?} into an Expression, but that's not possible")
+        }
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExecutionEnvironment {
@@ -208,7 +229,8 @@ impl AstNode for Expression {
                 environment
             ),
             Expression::HashLiteral(value) => evaluate_hash_literal(value, environment),
-            Expression::Quote(value) => Ok(Object::Quote((**value).clone())),
+            Expression::Quote(value) => process_quote(value, environment),
+            Expression::Unquote(_) => Err("Used `Unquote` function outside of `quote` environment".into()),
         }
     }
 }
@@ -438,4 +460,18 @@ fn evaluate_hash_literal(
     }).collect::<Result<Vec<_>, String>>()?;
 
     return Ok(Object::Hash(result));
+}
+
+fn process_quote(expression: &Expression, environment: &mut ExecutionEnvironment) -> Result<Object, String> {
+    let mut map_unquote = |expression| {
+        if let Expression::Unquote(expression) = expression {
+            Ok(expression.evaluate(environment)?.into())
+        } else {
+            Ok(expression)
+        }
+    };
+
+    let expression = (*expression).clone().modify(&mut map_unquote)?;
+
+    return Ok(Object::Quote(expression));
 }

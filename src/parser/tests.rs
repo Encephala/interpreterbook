@@ -611,3 +611,116 @@ fn parse_empty_hash_literal() {
         panic!("Expression wasn't a Hash literal expression")
     }
 }
+
+#[test]
+fn modify_expression_statement() {
+    let mut turn_one_into_two = |expression| {
+        if expression == Expression::Int(1) {
+            return Ok(Expression::Int(2));
+        }
+
+        return Ok(expression);
+    };
+
+    let inputs = [
+        (1_usize, 2_usize),
+        (2_usize, 2_usize),
+    ];
+
+    inputs.into_iter().for_each(|(input, output)| {
+        let mut program = Program { statements: Vec::from([Statement::ExpressionStatement {
+            value: Expression::Int(input).into()
+        }]), errors: Vec::new() };
+
+        program = program.modify(&mut turn_one_into_two).unwrap();
+
+        assert_eq!(*program.statements.first().unwrap(), Statement::ExpressionStatement {
+            value: Expression::Int(output).into()
+        });
+    });
+}
+
+#[test]
+fn modify_return_let_statements() {
+    let mut turn_one_into_two = |expression| {
+        if expression == Expression::Int(1) {
+            return Ok(Expression::Int(2));
+        }
+
+        return Ok(expression);
+    };
+
+    let mut program = parse_then_check_errors_and_length("let x = 1;", 1);
+
+    program = program.modify(&mut turn_one_into_two).unwrap();
+
+    assert_eq!(*program.statements.first().unwrap(), Statement::Let {
+        name: "x".into(),
+        value: Expression::Int(2).into()
+    });
+
+    program = parse_then_check_errors_and_length("return 1", 1);
+
+    program = program.modify(&mut turn_one_into_two).unwrap();
+
+    assert_eq!(*program.statements.first().unwrap(), Statement::Return { value: Expression::Int(2).into() });
+}
+
+#[test]
+fn modify_recursively() {
+    let mut turn_one_into_two = |expression| {
+        if expression == Expression::Int(1) {
+            return Ok(Expression::Int(2));
+        }
+
+        return Ok(expression);
+    };
+
+    use Expression::*;
+
+    let inputs = [
+        ("-1", PrefixExpression {
+            operator: PrefixOperator::Negate,
+            right: Int(2).into()
+        }),
+        ("1 + 2", InfixExpression {
+            left: Int(2).into(),
+            operator: InfixOperator::Add,
+            right: Int(2).into(),
+        }),
+        ("if (1 == 2) { 1 } else { false }", If {
+            condition: InfixExpression {
+                left: Int(2).into(),
+                operator: InfixOperator::Equals,
+                right: Int(2).into()
+            }.into(),
+            consequence: Block(Vec::from([
+                Statement::ExpressionStatement { value: Int(2).into() }
+            ])).into(),
+            alternative: Some(Block(Vec::from([
+                Statement::ExpressionStatement { value: Bool(false).into() }
+            ])).into()),
+        }),
+        ("epic_function(1)", CallExpression {
+            function: Ident("epic_function".into()).into(),
+            arguments: Vec::from([Int(2)]) }
+        ),
+        ("#1: 1, 'b': 3$", HashLiteral(HashMap::from([
+            (Int(2), Int(2)),
+            (Str("b".into()), Int(3)),
+        ]))),
+        // Can't be fucked to test all alternatives of Expression, this is pretty good I think
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let program = parse_then_check_errors_and_length(test_case.0, 1)
+            .modify(&mut turn_one_into_two)
+            .unwrap();
+
+        if let Statement::ExpressionStatement { value } = program.statements.first().unwrap() {
+            assert_eq!(**value, test_case.1);
+        } else {
+            panic!("Statement not an Expression statement");
+        }
+    });
+}

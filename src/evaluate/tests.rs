@@ -508,7 +508,7 @@ fn hash_literal_errors() {
         let result = evaluate(test_case.0);
 
         assert_eq!(result, Err(test_case.1.into()));
-    })
+    });
 }
 
 #[test]
@@ -528,5 +528,31 @@ fn quote_basic_functionality() {
         } else {
             panic!("Resulting object wasn't a Quote object");
         }
-    })
+    });
+}
+
+#[test]
+fn unquote_basic_functionality() {
+    test_case!(Object);
+
+    let inputs = [
+        TestCase("quote(unquote(4))", Object::Quote(Expression::Int(4))),
+        TestCase("quote(unquote(4 + 4))", Object::Quote(Expression::Int(8))),
+        TestCase("quote(8 + unquote(4 + 4))", Object::Quote(Expression::InfixExpression {
+            left: Expression::Int(8).into(),
+            operator: InfixOperator::Add,
+            right: Expression::Int(8).into()
+        })),
+        TestCase("quote(unquote(4 + 4) + 8)", Object::Quote(Expression::InfixExpression {
+            left: Expression::Int(8).into(),
+            operator: InfixOperator::Add,
+            right: Expression::Int(8).into()
+        })),
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0).unwrap();
+
+        assert_eq!(result, test_case.1);
+    });
 }

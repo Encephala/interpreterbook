@@ -556,3 +556,45 @@ fn unquote_basic_functionality() {
         assert_eq!(result, test_case.1);
     });
 }
+
+#[test]
+fn quote_inside_unquote() {
+    use Expression::*;
+
+    test_case!(Object);
+
+    let inputs = [
+        TestCase("quote(unquote(quote(4 + 5)) + 6)", Object::Quote(
+            InfixExpression {
+                left: InfixExpression {
+                    left: Int(4).into(),
+                    operator: InfixOperator::Add,
+                    right: Int(5).into(),
+                }.into(),
+                operator: InfixOperator::Add,
+                right: Int(6).into(),
+            }
+        )),
+        TestCase("
+        let quoted_infix = quote(4 + 5);
+        quote(unquote(6 + 7) + unquote(quoted_infix));
+        ",
+        Object::Quote(
+            InfixExpression {
+                left: Int(13).into(),
+                operator: InfixOperator::Add,
+                right: InfixExpression {
+                    left: Int(4).into(),
+                    operator: InfixOperator::Add,
+                    right: Int(5).into(),
+                }.into()
+            }
+        )),
+    ];
+
+    inputs.iter().for_each(|test_case| {
+        let result = evaluate(test_case.0).unwrap();
+
+        assert_eq!(result, test_case.1);
+    })
+}

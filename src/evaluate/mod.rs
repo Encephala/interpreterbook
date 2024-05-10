@@ -95,6 +95,7 @@ impl From<Object> for Expression {
             }
             Bool(value) => E::Bool(value),
             Str(value) => E::Str(value),
+            Quote(value) => value,
             other => panic!("Tried to convert object {other:?} into an Expression, but that's not possible")
         }
     }

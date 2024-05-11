@@ -15,7 +15,7 @@ pub trait Modifiable {
 #[derive(Debug)]
 pub struct Program {
     pub statements: Vec<Statement>,
-    pub errors: Vec<String>
+    pub errors: Vec<String>,
 }
 
 impl Modifiable for Program {
@@ -41,6 +41,7 @@ pub enum Statement {
 impl Modifiable for Statement {
     fn modify<F>(self, modifying_function: &mut F) -> Result<Statement, String>
     where F: FnMut(Expression) -> Result<Expression, String> {
+        println!("Modifying statement: {self:?}");
         match self {
             Statement::ExpressionStatement { value } => {
                 return Ok(Statement::ExpressionStatement { value: value.modify(modifying_function)?.into() })
@@ -76,12 +77,14 @@ pub enum Expression {
     HashLiteral(HashMap<Expression, Expression>),
     Quote(Box<Expression>),
     Unquote(Box<Expression>),
+    Macro { parameters: Vec<String>, body: Box<Expression> },
 }
 
 impl Modifiable for Expression {
     fn modify<F>(self, modifying_function: &mut F) -> Result<Expression, String>
     where F: FnMut(Expression) -> Result<Expression, String> {
         use Expression::*;
+        println!("Modifying expression: {self:?}");
 
         // TODO: This logic isn't right.
         // A modifying function could want to replace e.g. InfixExpressions, not just atomic expressions
@@ -436,6 +439,7 @@ impl<'a> Parser<'a> {
             HashStart => self.parse_hash_literal(),
             Quote => self.parse_quote_literal(),
             Unquote => self.parse_unquote_literal(),
+            Macro => self.parse_macro_literal(),
             _ => Err(format!("No prefix parser found for {:?}", &self.token))
         };
 
@@ -670,5 +674,17 @@ impl<'a> Parser<'a> {
         }
 
         return Ok(Expression::Unquote(parameters.into_iter().next().unwrap().into()).into());
+    }
+
+    fn parse_macro_literal(&mut self) -> Result<Box<Expression>, String> {
+        self.check_next_and_skip_to(&Token::LParen)?;
+
+        let parameters = self.parse_function_parameters()?;
+
+        self.next_token(); // Right parenthesis
+
+        let body = self.parse_block_expression()?;
+
+        return Ok(Expression::Macro { parameters, body }.into());
     }
 }

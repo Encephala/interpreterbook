@@ -45,6 +45,7 @@ pub enum Token {
 
     Quote,
     Unquote,
+    Macro,
 }
 
 use Token::*;
@@ -92,7 +93,6 @@ impl<'a> Lexer<'a> {
     }
 
     fn read_identifier(&mut self) -> Token {
-
         let start_index = self.index;
 
         // identifier starts with a letter but may contain numbers after that first letter
@@ -110,6 +110,7 @@ impl<'a> Lexer<'a> {
             b"return" => Return,
             b"quote" => Quote,
             b"unquote" => Unquote,
+            b"macro" => Macro,
             _ => Ident(str::from_utf8(&self.input[start_index..self.index]).unwrap().into())
         };
     }

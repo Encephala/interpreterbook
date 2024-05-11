@@ -20,6 +20,7 @@ pub enum Object {
     Array(Vec<Object>),
     Hash(HashMap<Object, Object>),
     Quote(Expression),
+    Macro { parameters: Vec<String>, body: Box<Expression>, environment: ExecutionEnvironment },
     None,
 }
 
@@ -49,7 +50,7 @@ impl std::fmt::Display for Object {
             Bool(value) => write!(f, "{value}"),
             Str(value) => f.write_str(value),
             Return(value) => write!(f, "{value}"),
-            Function{ parameters, body, environment: _ } => write!(
+            Function{ parameters, body, .. } => write!(
                 f,
                 "fn({parameters:?}) {{{body:?}}}"
             ),
@@ -64,6 +65,10 @@ impl std::fmt::Display for Object {
             ),
             Hash(value) => write!(f, "HashMap {value:?}"),
             Quote(value) => write!(f, "{:?}", value),
+            Macro { parameters, body, .. } => write!(
+                f,
+                "macro({parameters:?}) {{{body:?}}}"
+            ),
             None => f.write_str("None"),
         }
     }
@@ -130,6 +135,23 @@ impl ExecutionEnvironment {
     pub fn get(&self, key: &str) -> Option<&Object> {
         return self.variables.get(key).or(self.builtins.get(key));
     }
+
+
+    // For macro environments
+    fn add_macro(&mut self, statement: Statement) {
+        let Statement::Let { name, value } = statement
+        else {
+            panic!("Tried adding a macro that isn't actually a Macro (not a Let)")
+        };
+
+        let Expression::Macro { parameters, body } = *value
+        else {
+            println!("blabla");
+            panic!("Tried adding a macro that isn't actually a Macro (not a Macro)")
+        };
+
+        self.insert(name, Object::Macro { parameters, body, environment: self.clone() })
+    }
 }
 
 
@@ -186,7 +208,7 @@ impl AstNode for Program {
 
 impl AstNode for Expression {
     fn evaluate(&self, environment: &mut ExecutionEnvironment) -> Result<Object, String> {
-        match &self{
+        match &self {
             Expression::Empty => Ok(Object::None),
             Expression::Ident(name) => {
                 environment.get(name)
@@ -232,6 +254,7 @@ impl AstNode for Expression {
             Expression::HashLiteral(value) => evaluate_hash_literal(value, environment),
             Expression::Quote(value) => process_quote(value, environment),
             Expression::Unquote(_) => Err("Used `Unquote` function outside of `quote` environment".into()),
+            Expression::Macro { .. } => panic!("Tried evaluating macro at runtime"),
         }
     }
 }
@@ -416,7 +439,7 @@ fn evaluate_function_call(
         .map(|argument| argument.evaluate(environment))
         .collect::<Result<Vec<Object>, String>>()?;
 
-    if let Object::Function{ parameters, body, mut environment} = function {
+    if let Object::Function { parameters, body, mut environment} = function {
         if arguments.len() != parameters.len() {
             return Err(
                 format!("Number of arguments {:?} does not equal number of parameters {:?}",
@@ -475,4 +498,92 @@ fn process_quote(expression: &Expression, environment: &mut ExecutionEnvironment
     let expression = (*expression).clone().modify(&mut map_unquote)?;
 
     return Ok(Object::Quote(expression));
+}
+
+impl Program {
+    fn define_macros(mut self, macro_env: &mut ExecutionEnvironment) -> Self {
+        // Hell yeah nesting
+        // Add macros to macro_env, keep only remaining statements
+        // (filter_map instead of filter because filter_map owns its parameters)
+        let filtered_statements = self.statements.into_iter().filter_map(|statement| {
+            let Statement::Let { value, ..} = statement.clone() else { return Some(statement); };
+            if matches!(value.as_ref(), Expression::Macro { .. }) {
+                macro_env.add_macro(statement);
+
+                Option::None
+            } else {
+                Some(statement)
+            }
+        }).collect::<Vec<_>>();
+
+        self.statements = filtered_statements;
+
+        return self;
+    }
+
+    pub fn expand_macros(mut self, macro_env: &mut ExecutionEnvironment) -> Result<Program, String> {
+        self = self.define_macros(macro_env);
+
+        return self.modify(&mut |expression| {
+            let Some(the_macro) = cast_to_macro(&expression, macro_env)
+            else {
+                return Ok(expression);
+            };
+
+            let Expression::CallExpression { arguments, .. } = expression
+            else {
+                panic!("This never happens, as cast_to_macro also does this destructuring")
+            };
+
+            let quoted_arguments = quote_arguments(arguments);
+
+            let Object::Macro { parameters, body, environment } = the_macro
+            else {
+                panic!("This never happens");
+            };
+
+            let mut evaluation_env = extend_environment(parameters, quoted_arguments, environment);
+
+            let result = body.evaluate(&mut evaluation_env)?;
+
+            if !matches!(result, Object::Quote(_)) {
+                return Err("Macros must return a Quote object".into());
+            }
+
+            return Ok(result.into());
+        })
+    }
+}
+
+fn cast_to_macro(expression: &Expression, macro_env: &mut ExecutionEnvironment) -> Option<Object> {
+    if let Expression::CallExpression { function, .. } = expression {
+        let Expression::Ident(name) = function.as_ref()
+        else {
+            return Option::None;
+        };
+
+        let Some(object) = macro_env.get(name).cloned()
+        else {
+            return Option::None;
+        };
+
+        if matches!(object, Object::Macro { .. }) {
+            return Some(object);
+        }
+    }
+
+    println!("Not a call expression");
+    return Option::None;
+}
+
+fn quote_arguments(arguments: Vec<Expression>) -> Vec<Object> {
+    return arguments.into_iter().map(Quote).collect();
+}
+
+fn extend_environment(parameters: Vec<String>, arguments: Vec<Object>, mut environment: ExecutionEnvironment) -> ExecutionEnvironment {
+    parameters.clone().into_iter().zip(arguments).for_each(|(parameter, argument)| {
+        environment.insert(parameter, argument);
+    });
+
+    return environment;
 }

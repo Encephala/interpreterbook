@@ -1,5 +1,5 @@
 use super::super::parser::Parser;
-use super::{AstNode, Object, Statement, Expression, InfixOperator, ExecutionEnvironment};
+use super::*;
 
 macro_rules! test_case {
     ($type:ty) => {
@@ -596,5 +596,86 @@ fn quote_inside_unquote() {
         let result = evaluate(test_case.0).unwrap();
 
         assert_eq!(result, test_case.1);
+    })
+}
+
+#[test]
+fn defining_macros() {
+    let input = "
+    let number = 1;
+    let function = fn(x, y) { x + y; };
+    let mymacro = macro(x, y) { x + y; }
+    ";
+
+    let mut program = Parser::new(input).parse_program();
+
+    let mut macro_env = ExecutionEnvironment::new();
+
+    if !program.errors.is_empty() {
+        panic!("Got errors while executing program: {:?}", program.errors);
+    }
+
+    program = program.define_macros(&mut macro_env);
+
+    assert_eq!(program.statements.len(), 2);
+    assert!(macro_env.get("number").is_none());
+    assert!(macro_env.get("function").is_none());
+    if let Some(Object::Macro { parameters, body, .. }) = macro_env.get("mymacro") {
+        assert_eq!(parameters, &Vec::from([
+            "x".to_owned(),
+            "y".to_owned(),
+        ]));
+
+        assert_eq!(body, &Box::new(Expression::Block(Vec::from([
+            Statement::ExpressionStatement { value: Expression::InfixExpression {
+                left: Expression::Ident("x".into()).into(),
+                operator: InfixOperator::Add,
+                right: Expression::Ident("y".into()).into(),
+            }.into()}
+        ]))));
+    } else {
+        panic!("mymacro not found in Macro environment")
+    }
+}
+
+#[test]
+fn expanding_macros() {
+    use Expression::*;
+
+    test_case!(Expression);
+
+    let inputs = [
+        TestCase("let infix_expression = macro() { quote(1 + 2); };
+
+        infix_expression();",
+        InfixExpression {
+            left: Int(1).into(),
+            operator: InfixOperator::Add,
+            right: Int(2).into(),
+        }),
+        TestCase("let reverse = macro(a, b) { quote(unquote(b) - unquote(a)) };
+        reverse(2 + 2, 10 - 5)",
+        InfixExpression {
+            left: InfixExpression { left: Int(10).into(), operator: InfixOperator::Subtract, right: Int(5).into() }.into(),
+            operator: InfixOperator::Subtract,
+            right: InfixExpression { left: Int(2).into(), operator: InfixOperator::Add, right: Int(2).into() }.into(),
+        }),
+    ];
+
+    inputs.into_iter().for_each(|test_case| {
+        let mut program = Parser::new(test_case.0).parse_program();
+
+        let mut macro_env = ExecutionEnvironment::new();
+
+        if !program.errors.is_empty() {
+            panic!("Got errors while executing program: {:?}", program.errors);
+        }
+
+        match program.expand_macros(&mut macro_env) {
+            Ok(new_program) => { program = new_program },
+            Err(message) => panic!("Got error message {message}"),
+        }
+
+        assert_eq!(program.statements.first().unwrap(), &Statement::ExpressionStatement { value: test_case.1.into() });
     })
 }

@@ -720,3 +720,27 @@ fn modify_recursively() {
         }
     });
 }
+
+#[test]
+fn macro_literals() {
+    let input = "macro(x, y) { x + y; };";
+
+    let program = parse_then_check_errors_and_length(input, 1);
+
+    if let Statement::ExpressionStatement { value } = program.statements.into_iter().next().unwrap() {
+        if let Expression::Macro { parameters, body } = *value {
+            assert_eq!(parameters, Vec::from(["x".to_owned(), "y".to_owned()]));
+            assert_eq!(body, Expression::Block(Vec::from([
+                Statement::ExpressionStatement { value: Expression::InfixExpression {
+                    left: Expression::Ident("x".into()).into(),
+                    operator: InfixOperator::Add,
+                    right: Expression::Ident("y".into()).into(),
+                }.into()}
+            ])).into());
+        } else {
+            panic!("Expression not a Macro expression");
+        }
+    } else {
+        panic!("Statement not an Expression statement");
+    }
+}

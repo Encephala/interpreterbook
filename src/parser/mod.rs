@@ -41,7 +41,6 @@ pub enum Statement {
 impl Modifiable for Statement {
     fn modify<F>(self, modifying_function: &mut F) -> Result<Statement, String>
     where F: FnMut(Expression) -> Result<Expression, String> {
-        println!("Modifying statement: {self:?}");
         match self {
             Statement::ExpressionStatement { value } => {
                 return Ok(Statement::ExpressionStatement { value: value.modify(modifying_function)?.into() })
@@ -84,7 +83,6 @@ impl Modifiable for Expression {
     fn modify<F>(self, modifying_function: &mut F) -> Result<Expression, String>
     where F: FnMut(Expression) -> Result<Expression, String> {
         use Expression::*;
-        println!("Modifying expression: {self:?}");
 
         // TODO: This logic isn't right.
         // A modifying function could want to replace e.g. InfixExpressions, not just atomic expressions

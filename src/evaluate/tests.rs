@@ -660,6 +660,28 @@ fn expanding_macros() {
             operator: InfixOperator::Subtract,
             right: InfixExpression { left: Int(2).into(), operator: InfixOperator::Add, right: Int(2).into() }.into(),
         }),
+        TestCase("let unless = macro(condition, consequence, alternative) {
+            quote(if (!(unquote(condition))) {
+                unquote(consequence);
+            } else {
+                unquote(alternative);
+            })
+        };
+
+        unless(10 > 5, true, false)",
+        If {
+            condition: PrefixExpression { operator: PrefixOperator::Not, right: InfixExpression {
+                left: Int(10).into(),
+                operator: InfixOperator::GreaterThan,
+                right: Int(5).into(),
+            }.into()}.into(),
+            consequence: Block(Vec::from([
+                Statement::ExpressionStatement { value: Bool(true).into()},
+            ])).into(),
+            alternative: Some(Block(Vec::from([
+                Statement::ExpressionStatement { value: Bool(false).into()},
+            ])).into()),
+        }),
     ];
 
     inputs.into_iter().for_each(|test_case| {

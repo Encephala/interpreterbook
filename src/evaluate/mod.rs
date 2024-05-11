@@ -572,7 +572,6 @@ fn cast_to_macro(expression: &Expression, macro_env: &mut ExecutionEnvironment) 
         }
     }
 
-    println!("Not a call expression");
     return Option::None;
 }
 

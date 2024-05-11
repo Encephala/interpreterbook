@@ -127,11 +127,6 @@ impl Modifiable for Expression {
                 parameters,
                 body: body.modify(modifying_function)?.into()
             }),
-            CallExpression { function, arguments } => Ok(CallExpression {
-                function: function.modify(modifying_function)?.into(),
-                arguments: arguments.into_iter().map(|arg| arg.modify(modifying_function))
-                    .collect::<Result<Vec<Expression>, String>>()?,
-            }),
             Array(expressions) => Ok(Array(
                 expressions.into_iter().map(|expression| expression.modify(modifying_function))
                     .collect::<Result<Vec<Expression>, String>>()?,

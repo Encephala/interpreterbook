@@ -701,10 +701,6 @@ fn modify_recursively() {
                 Statement::ExpressionStatement { value: Bool(false).into() }
             ])).into()),
         }),
-        ("epic_function(1)", CallExpression {
-            function: Ident("epic_function".into()).into(),
-            arguments: Vec::from([Int(2)]) }
-        ),
         ("#1: 1, 'b': 3$", HashLiteral(HashMap::from([
             (Int(2), Int(2)),
             (Str("b".into()), Int(3)),

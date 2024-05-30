@@ -471,7 +471,7 @@ impl<'a> Parser<'a> {
             // Special treatment, because parameters to a call expression
             // are multiple right expressions rather than just one
             // Idea: could we avoid this special behaviour if in parse expression,
-            // we check for a comment and if so parse an expression list?
+            // we check for a comma and if so parse an expression list?
             // I guess that would allow for Python's implicit tuples as well, kinda cool
             LParen => self.parse_call_expression(left),
             LBracket => self.parse_index_expression(left),
